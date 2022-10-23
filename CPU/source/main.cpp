@@ -3,7 +3,7 @@
 
 int main()
 {
-    FILE* ASM_out = fopen("C:\\Users\\david\\Desktop\\Projects CLion\\Task4\\CPU\\ASM_out.txt", "r");
+    FILE* ASM_out = fopen("ASM_out.txt", "r");
     if (ASM_out == nullptr)
     {
         return -1;
