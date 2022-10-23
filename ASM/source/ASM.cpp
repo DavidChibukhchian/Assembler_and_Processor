@@ -41,7 +41,7 @@ code_struct create_code_array(void* text_of_commands)
 {
     text_struct* text = (text_struct*) text_of_commands;
 
-    int* data = (int*)calloc (2 * text->number_of_commands + 1, sizeof(int));
+    int* data = (int*)calloc (2 * text->number_of_commands, sizeof(int));
 
     size_t counter = 0;
 
