@@ -3,7 +3,7 @@
 
 int main()
 {
-    FILE* ASM_in = fopen("C:\\Users\\david\\Desktop\\Projects CLion\\Task4\\ASM\\ASM_in.txt", "r");
+    FILE* ASM_in = fopen("ASM_in.txt", "r");
     if (ASM_in == nullptr)
     {
         return -1;
@@ -13,7 +13,7 @@ int main()
 
     code_struct code = create_code_array(&text);
 
-    FILE* ASM_out = fopen("C:\\Users\\david\\Desktop\\Projects CLion\\Task4\\ASM\\ASM_out.bin", "wb");
+    FILE* ASM_out = fopen("ASM_out.bin", "wb");
     if (ASM_out == nullptr)
     {
         return -1;
