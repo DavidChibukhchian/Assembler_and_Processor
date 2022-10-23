@@ -8,16 +8,17 @@ int main()
     {
         return -1;
     }
-    program_text Program = read_input_file(ASM_in);
+    text_struct text = record_commands_to_buffer(ASM_in);
     fclose(ASM_in);
 
+    code_struct code = create_code_array(&text);
 
-    FILE* ASM_out = fopen("C:\\Users\\david\\Desktop\\Projects CLion\\Task4\\ASM\\ASM_out.txt", "w");
+    FILE* ASM_out = fopen("C:\\Users\\david\\Desktop\\Projects CLion\\Task4\\ASM\\ASM_out.bin", "wb");
     if (ASM_out == nullptr)
     {
         return -1;
     }
-    record_code_to_file(ASM_out, &Program);
+    fwrite(code.pointer, sizeof(int), code.number_of_elements, ASM_out);
     fclose(ASM_out);
 
     return 0;

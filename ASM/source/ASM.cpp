@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <malloc.h>
 #include "Buffer.h"
 #include "ASM.h"
 
@@ -16,79 +17,95 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
-program_text read_input_file(FILE* ASM_in)
+text_struct record_commands_to_buffer(FILE* ASM_in)
 {
-    program_text Program = {};
-
     size_t filesize = get_file_size(ASM_in);
 
     char* buffer = read_file_to_buffer(ASM_in, filesize);
 
-    Program.number_of_commands = count_lines(buffer);
+    text_struct text = {};
+
+    text.number_of_commands = count_lines(buffer);
 
     change_delimiter(buffer, '\n', '\0');
 
-    char** text = split_buffer(buffer, Program.number_of_commands, filesize);
-    Program.text = text;
+    char** array_of_commands = split_buffer(buffer, text.number_of_commands, filesize);
+    text.array_of_commands = array_of_commands;
 
-    return Program;
+    return text;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void record_code_to_file(FILE* ASM_out, void* Program_struct)
+code_struct create_code_array(void* text_of_commands)
 {
-    program_text* Program = (program_text*) Program_struct;
-    fprintf(ASM_out, "%zu", Program->number_of_commands);
+    text_struct* text = (text_struct*) text_of_commands;
 
-    size_t number_of_lines = Program->number_of_commands;
-    char cmd[100] = ""; // !
-    for (size_t i = 0; i < Program->number_of_commands; i++)
+    int* data = (int*)calloc (2 * text->number_of_commands + 1, sizeof(int));
+
+    size_t counter = 0;
+
+    char cmd[100] = "";
+    for (size_t i = 0; i < text->number_of_commands; i++)
     {
-        sscanf(Program->text[i], "%s", cmd);
+        sscanf(text->array_of_commands[i], "%s", cmd);
 
         if (strcmp(cmd, "PUSH") == 0)
         {
             int value = 0;
-            sscanf(Program->text[i] + 5, "%d", &value);
-            fprintf(ASM_out, "\n%d\n%d", CMD_PUSH, value);
-            number_of_lines++;
+            sscanf(text->array_of_commands[i] + 5, "%d", &value);
+            data[counter] = CMD_PUSH;
+            data[counter + 1] = value;
+            counter += 2;
         }
         else if (strcmp(cmd, "ADD") == 0)
         {
-            fprintf(ASM_out, "\n%d", CMD_ADD);
+            data[counter] = CMD_ADD;
+            counter++;
         }
         else if (strcmp(cmd, "SUB") == 0)
         {
-            fprintf(ASM_out, "\n%d", CMD_SUB);
+            data[counter] = CMD_SUB;
+            counter++;
         }
         else if (strcmp(cmd, "MUL") == 0)
         {
-            fprintf(ASM_out, "\n%d", CMD_MUL);
+            data[counter] = CMD_MUL;
+            counter++;
         }
         else if (strcmp(cmd, "DIV") == 0)
         {
-            fprintf(ASM_out, "\n%d", CMD_DIV);
+            data[counter] = CMD_DIV;
+            counter++;
         }
         else if (strcmp(cmd, "OUT") == 0)
         {
-            fprintf(ASM_out, "\n%d", CMD_OUT);
+            data[counter] = CMD_OUT;
+            counter++;
         }
         else if (strcmp(cmd, "HLT") == 0)
         {
-            fprintf(ASM_out, "\n%d", CMD_HLT);
+            data[counter] = CMD_HLT;
+            counter++;
         }
         else if (strcmp(cmd, "DUMP") == 0)
         {
-            fprintf(ASM_out, "\n%d", CMD_DUMP);
+            data[counter] = CMD_DUMP;
+            counter++;
         }
         else
         {
             printf("\nSyntax error\n");
-            fclose(ASM_out);
         }
     }
 
-    fseek(ASM_out, 0, SEEK_SET);
-    fprintf(ASM_out, "%zu", number_of_lines);
+    code_struct code = {};
+    code.number_of_elements = counter;
+
+    int* code_pointer = (int*)realloc (data, (counter - 1) * sizeof(int));
+    code.pointer = code_pointer;
+
+    return code;
 }
+
+//----------------------------------------------------------------------------------------------------------------------
