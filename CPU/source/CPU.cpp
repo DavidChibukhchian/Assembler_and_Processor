@@ -1,38 +1,62 @@
 #include <stdio.h>
 #include <malloc.h>
-#include "Stack.h"
+#include <assert.h>
+#include <sys\stat.h>
+#include "CPU.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define CMD_PUSH 1
-#define CMD_ADD  2
-#define CMD_SUB  3
-#define CMD_MUL  4
-#define CMD_DIV  5
-#define CMD_OUT  6
-#define CMD_HLT  7
-#define CMD_DUMP 8
-
-//----------------------------------------------------------------------------------------------------------------------
-
-int* read_input_file(FILE* ASM_out)
+enum Commands
 {
-    size_t number_of_lines = 0;
-    fscanf(ASM_out, "%zu", &number_of_lines);
+    CMD_HLT  = 0,
+    CMD_PUSH = 1,
+    CMD_ADD  = 2,
+    CMD_SUB  = 3,
+    CMD_MUL  = 4,
+    CMD_DIV  = 5,
+    CMD_OUT  = 6,
+    CMD_IN   = 7,
+    CMD_DUMP = 8
+};
 
-    int* code = (int*)calloc (number_of_lines, sizeof(int));
+//----------------------------------------------------------------------------------------------------------------------
 
-    for (size_t i = 0; i < number_of_lines; i++)
+size_t get_filesize(FILE* filename)
+{
+    struct stat file_data{};
+    fstat(fileno(filename), &file_data);
+
+    return file_data.st_size;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+char* read_code_to_buffer(FILE* ASM_out, int* err)
+{
+    size_t filesize = get_filesize(ASM_out);
+    if (filesize == 0)
     {
-        fscanf(ASM_out, "%d", &code[i]);
+        fclose(ASM_out);
+        *err = Input_File_Is_Empty;
+        return nullptr;
     }
+
+    char* code = (char*)calloc (filesize, sizeof(char));
+    if (code == nullptr)
+    {
+        fclose(ASM_out);
+        *err = Failed_To_Create_Buffer;
+        return code;
+    }
+
+    fread(code, sizeof(char), filesize, ASM_out);
 
     return code;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void run_code(int* code, Stack* stk)
+void run_code(char* code, Stack* stk)
 {
     size_t ip = 0;
     int num1, num2 = 0;
@@ -41,8 +65,9 @@ void run_code(int* code, Stack* stk)
         switch(code[ip])
         {
             case CMD_PUSH:
-                stackPush(stk, code[ip+1]);
-                ip+=2;
+                ip++;
+                stackPush(stk, *(int*)(code + ip));
+                ip += sizeof(int);
                 break;
 
             case CMD_ADD:
@@ -55,7 +80,7 @@ void run_code(int* code, Stack* stk)
             case CMD_SUB:
                 stackPop(stk, &num1);
                 stackPop(stk, &num2);
-                stackPush(stk, num1 - num2);
+                stackPush(stk, num2 - num1);
                 ip++;
                 break;
 
@@ -69,17 +94,30 @@ void run_code(int* code, Stack* stk)
             case CMD_DIV:
                 stackPop(stk, &num1);
                 stackPop(stk, &num2);
-                stackPush(stk, num1/num2);
+                stackPush(stk, num2 / num1);
                 ip++;
                 break;
 
-                //
+            case CMD_OUT:
+                ip++;
+                break;
+
+            case CMD_IN:
+                scanf("%d", &num1);
+                stackPush(stk, num1);
+                ip++;
+                break;
 
             case CMD_HLT:
-                stackDtor(stk);
+                ip++;
+                break;
+
+            case CMD_DUMP:
+                ip++;
                 break;
         }
     }
+    free(code);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

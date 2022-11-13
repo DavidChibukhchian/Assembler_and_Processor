@@ -1,23 +1,34 @@
 #include "Stack.h"
 #include "CPU.h"
+#include "Logger.h"
 
-int main()
+int main(int argc, char* argv[])
 {
-    FILE* ASM_out = fopen("ASM_out.txt", "r");
-    if (ASM_out == nullptr)
+    int err = 0;
+
+    FILE* logfile = fopen("CPU_logfile.txt",  "w");
+    if (logfile == nullptr)
     {
-        return -1;
+        printf("---\nERROR: Failed to create logfile\n---");
+        return Failed_To_Create_Logfile;
     }
 
-    int* code = read_input_file(ASM_out);
+    ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments,);
+
+    FILE* ASM_out = fopen(argv[1], "rb");
+    ASSERT(ASM_out != nullptr, Failed_To_Open_Input_File,);
+
+    char* code = read_code_to_buffer(ASM_out, &err);
+    VERIFY(err);
     fclose(ASM_out);
 
-    Stack stk1 = {};
-    stackCtor(&stk1, 1);
+    Stack stk = {};
+    stackCtor(&stk);
 
-    run_code(code, &stk1);
+    run_code(code, &stk);
 
-    stackDisplay(&stk1);
+    stackDisplay(&stk);
+    stackDtor(&stk);
 
     return 0;
 }

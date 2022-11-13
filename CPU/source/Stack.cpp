@@ -11,10 +11,10 @@ static const size_t   BUFFER_SIZE_MAX = 1e7;
 //----------------------------------------------------------------------------------------------------------------------
 
 static const size_t SIZE_OF_STRUCT =  1 * sizeof(stack_status)
-                                      + 2 * sizeof(size_t)
-                                      + 2 * sizeof(elem_t)
-                                      + 2 * sizeof(canary_t)
-                                      + 1 * sizeof(FILE*);
+                                    + 2 * sizeof(size_t)
+                                    + 2 * sizeof(elem_t)
+                                    + 2 * sizeof(canary_t)
+                                    + 1 * sizeof(FILE*);
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -558,6 +558,7 @@ int stackDisplay(Stack* stk)
     if (errors != Stack_Is_OK)
         return errors;
 
+    printf("\n");
     for (size_t i = 0; i < stk->capacity; i++)
     {
         if (stk->first_elem[i] == POISON)
