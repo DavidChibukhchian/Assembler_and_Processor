@@ -1,13 +1,31 @@
-#ifndef ASM_ASM_H
-#define ASM_ASM_H
+#ifndef _ASM_H_
+#define _ASM_H_
 
-struct text_struct
+#include "Logger.h"
+
+#define ASSERT(condition, err, code) {  if (!(condition))           \
+                                        {                           \
+                                            code;                   \
+                                            dump(logfile, err);     \
+                                            fclose(logfile);        \
+                                            return err;             \
+                                        }                           }
+
+#define VERIFY(err) {  if (err)                    \
+                       {                           \
+                           dump(logfile, err);     \
+                           fclose(ASM_in);         \
+                           fclose(logfile);        \
+                           return err;             \
+                       }                           }
+
+struct commands_struct
 {
     char** array_of_commands;
     size_t number_of_commands;
 };
 
-text_struct record_commands_to_buffer(FILE* ASM_in);
+int record_commands_to_buffer(FILE* ASM_in, commands_struct* commands);
 
 struct code_struct
 {
@@ -15,6 +33,6 @@ struct code_struct
     size_t number_of_elements;
 };
 
-code_struct create_code_array(void* text_of_commands);
+int create_code_array(commands_struct* commands, code_struct* code);
 
-#endif //ASM_ASM_H
+#endif
