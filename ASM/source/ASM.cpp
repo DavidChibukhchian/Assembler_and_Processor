@@ -6,6 +6,10 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
+#define BUFF_SIZE 100
+#define LENGTH_OF_PUSH 5
+
+//TODO enum
 #define CMD_PUSH 1
 #define CMD_ADD  2
 #define CMD_SUB  3
@@ -17,43 +21,54 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
-text_struct record_commands_to_buffer(FILE* ASM_in)
+int record_commands_to_buffer(FILE* ASM_in, commands_struct* commands)
 {
-    size_t filesize = get_file_size(ASM_in);
+    size_t filesize = get_filesize(ASM_in);
+    if (filesize == 0)
+    {
+        return Input_File_Is_Empty;
+    }
 
     char* buffer = read_file_to_buffer(ASM_in, filesize);
+    if (buffer == nullptr)
+    {
+        return Failed_To_Create_Buffer;
+    }
 
-    text_struct text = {};
+    commands->number_of_commands = count_lines(buffer);
+   
+    char** array_of_commands = split_buffer(buffer, commands->number_of_commands, filesize);
+    if (array_of_commands == nullptr)
+    {
+        return Failed_To_Create_Array_Of_Commands;
+    }
 
-    text.number_of_commands = count_lines(buffer);
+    commands->array_of_commands = array_of_commands;
 
-    change_delimiter(buffer, '\n', '\0');
-
-    char** array_of_commands = split_buffer(buffer, text.number_of_commands, filesize);
-    text.array_of_commands = array_of_commands;
-
-    return text;
+    return Done_Successfully;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-code_struct create_code_array(void* text_of_commands)
+int create_code_array(commands_struct* commands, code_struct* code)
 {
-    text_struct* text = (text_struct*) text_of_commands;
-
-    int* data = (int*)calloc (2 * text->number_of_commands, sizeof(int));
+    int* data = (int*)calloc (2 * commands->number_of_commands, sizeof(int));
+    if (data == nullptr)
+    {
+        return Failed_To_Create_Array_Of_Code;
+    }
 
     size_t counter = 0;
 
-    char cmd[100] = "";
-    for (size_t i = 0; i < text->number_of_commands; i++)
+    char cmd[BUFF_SIZE] = "";
+    for (size_t i = 0; i < commands->number_of_commands; i++)
     {
-        sscanf(text->array_of_commands[i], "%s", cmd);
+        sscanf(commands->array_of_commands[i], "%s", cmd);
 
         if (strcmp(cmd, "PUSH") == 0)
         {
             int value = 0;
-            sscanf(text->array_of_commands[i] + 5, "%d", &value);
+            sscanf(commands->array_of_commands[i] + LENGTH_OF_PUSH, "%d", &value);
             data[counter] = CMD_PUSH;
             data[counter + 1] = value;
             counter += 2;
@@ -95,17 +110,23 @@ code_struct create_code_array(void* text_of_commands)
         }
         else
         {
-            printf("\nSyntax error\n");
+            free(data);
+            return Invalid_Syntax;
         }
     }
 
-    code_struct code = {};
-    code.number_of_elements = counter;
+    code->number_of_elements = counter;
 
     int* code_pointer = (int*)realloc (data, (counter - 1) * sizeof(int));
-    code.pointer = code_pointer;
+    if (code_pointer == nullptr)
+    {
+        free(data);
+        return Failed_To_Create_Array_Of_Code;
+    }
+    code->pointer = code_pointer;
 
-    return code;
+    free(commands->array_of_commands);
+    return Done_Successfully;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -1,16 +1,15 @@
 #include <stdio.h>
-#include <assert.h>
 #include <sys\stat.h>
+#include <malloc.h>
 #include "Buffer.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 
-size_t get_file_size(FILE* filename)
+size_t get_filesize(FILE* filename)
 {
-    assert(filename != nullptr);
-
     struct stat file_data{};
     fstat(fileno(filename), &file_data);
+
     return file_data.st_size;
 }
 
@@ -18,18 +17,16 @@ size_t get_file_size(FILE* filename)
 
 char* read_file_to_buffer(FILE* filename, size_t filesize)
 {
-    assert(filename != nullptr);
-    assert(filesize != 0);
-
     char* buffer = (char*)calloc (1 + filesize + 1, sizeof(char));
     if (buffer == nullptr)
     {
         return nullptr;
     }
+
     *buffer = '\n';
     *(buffer + filesize + sizeof(char)) = '\0';
 
-    fread(buffer + sizeof(char), sizeof (char), filesize, filename);
+    fread(buffer + sizeof(char), sizeof(char), filesize, filename);
 
     return buffer;
 }
@@ -38,8 +35,6 @@ char* read_file_to_buffer(FILE* filename, size_t filesize)
 
 size_t count_lines(char* buffer)
 {
-    assert(buffer != nullptr);
-
     size_t number_of_lines = 0;
 
     buffer++;
@@ -51,6 +46,7 @@ size_t count_lines(char* buffer)
         }
         buffer++;
     }
+
     return number_of_lines;
 }
 
@@ -58,12 +54,12 @@ size_t count_lines(char* buffer)
 
 void change_delimiter(char* buffer, char old_delimiter, char new_delimiter)
 {
-    assert(buffer != nullptr);
-
     while (*buffer != '\0')
     {
         if (*buffer == old_delimiter)
+        {
             *buffer = new_delimiter;
+        }
         buffer++;
     }
 }
@@ -72,12 +68,13 @@ void change_delimiter(char* buffer, char old_delimiter, char new_delimiter)
 
 char** split_buffer(char* buffer, size_t number_of_lines, size_t filesize)
 {
-    assert(buffer != nullptr);
-    assert(number_of_lines != 0);
-    assert(filesize != 0);
-
-    char** text = (char**) calloc(number_of_lines, sizeof(char*));
-    assert(text != nullptr);
+    change_delimiter(buffer, '\n', '\0');
+    
+    char** text = (char**)calloc (number_of_lines, sizeof(char*));
+    if (text == nullptr)
+    {
+        return nullptr;
+    }
 
     char** text_i = text;
 
