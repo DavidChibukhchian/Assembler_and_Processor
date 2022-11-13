@@ -1,8 +1,26 @@
 #ifndef CPU_CPU_H
 #define CPU_CPU_H
 
-int* read_input_file(FILE* ASM_out);
+#include "Logger.h"
+#include "Stack.h"
 
-void run_code(int* code, Stack* stk);
+#define ASSERT(condition, err, code) {  if (!(condition))           \
+                                        {                           \
+                                            code;                   \
+                                            dump(logfile, err);     \
+                                            fclose(logfile);        \
+                                            return err;             \
+                                        }                           }
+
+#define VERIFY(err) {  if (err)                    \
+                       {                           \
+                           dump(logfile, err);     \
+                           fclose(logfile);        \
+                           return err;             \
+                       }                           }
+
+char* read_code_to_buffer(FILE* ASM_out, int* err);
+
+void run_code(char* code, Stack* stk);
 
 #endif //CPU_CPU_H
