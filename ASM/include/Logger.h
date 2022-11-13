@@ -11,8 +11,9 @@ enum Errors
     Failed_To_Create_Buffer            = 5,
     Failed_To_Create_Array_Of_Commands = 6,
     Failed_To_Create_Array_Of_Code     = 7,
-    Invalid_Syntax                     = 8,
-    Failed_To_Create_Output_File       = 9
+    Failed_To_Resize_Array_Of_Code     = 8,
+    Invalid_Syntax                     = 9,
+    Failed_To_Create_Output_File       = 10
 };
 
 void dump(FILE* logfile, int err);

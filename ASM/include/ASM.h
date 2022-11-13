@@ -22,12 +22,21 @@
 struct commands_struct
 {
     char** array_of_commands;
+    char* buffer;
     size_t number_of_commands;
 };
 
 int record_commands_to_buffer(FILE* ASM_in, commands_struct* commands);
 
 struct code_struct
+{
+    char* pointer;
+    size_t size;
+    size_t offset;
+    int err;
+};
+
+struct code_struct_old
 {
     int* pointer;
     size_t number_of_elements;
