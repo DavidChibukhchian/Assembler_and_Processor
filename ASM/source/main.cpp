@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
         return Failed_To_Create_Logfile;
     }
 
-    ASSERT(argc == 2, Incorrect_CMD_Arguments,);
+    ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments,);
 
     FILE* ASM_in = fopen(argv[1], "r");
     ASSERT(ASM_in != nullptr, Failed_To_Open_Input_File,);
@@ -23,7 +23,6 @@ int main(int argc, char* argv[])
     commands_struct commands = {};
     err = record_commands_to_buffer(ASM_in, &commands);
     VERIFY(err);
-
     fclose(ASM_in);
 
     code_struct code = {};

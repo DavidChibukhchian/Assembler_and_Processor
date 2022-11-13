@@ -5,7 +5,7 @@
 
 const char* error_message[] = { "Done Successfully",
                                 "Failed to create logfile",
-                                "Incorrect command line arguments",
+                                "Incorrect number of command line arguments",
                                 "Failed to open input file",
                                 "Input file is empty",
                                 "Failed to create buffer",

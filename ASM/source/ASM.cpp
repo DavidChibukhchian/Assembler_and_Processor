@@ -7,20 +7,21 @@
 //----------------------------------------------------------------------------------------------------------------------
 
 #define MULTIPLIER 1.5
+#define SPACE 1
 #define BUFF_SIZE 25
-#define LENGTH_OF_PUSH 5
 
-//TODO enum
-//#define CMD_PUSH 1
-#define CMD_ADD  2
-#define CMD_SUB  3
-#define CMD_MUL  4
-#define CMD_DIV  5
-#define CMD_OUT  6
-#define CMD_HLT  7
-#define CMD_DUMP 8
-
-char CMD_PUSH = 1;
+enum Commands
+{
+    CMD_HLT  = 0,
+    CMD_PUSH = 1,
+    CMD_ADD  = 2,
+    CMD_SUB  = 3,
+    CMD_MUL  = 4,
+    CMD_DIV  = 5,
+    CMD_OUT  = 6,
+    CMD_IN   = 7,
+    CMD_DUMP = 8
+};
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -84,14 +85,14 @@ static void codePushChar(code_struct* code, char value)
 
     code->pointer[code->offset] = value;
 
-    code->offset++;
+    code->offset += sizeof(char);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
 static void codePushInt(code_struct* code, int value)
 {
-    if ((code->size - code->offset) < 4)
+    if ((code->size - code->offset) < sizeof(int))
     {
         codeExpand(code);
         if (code->err)
@@ -104,7 +105,7 @@ static void codePushInt(code_struct* code, int value)
     int* ptr = (int*)(code->pointer + code->offset);
     *ptr = value;
 
-    code->offset += 4;
+    code->offset += sizeof(int);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -160,62 +161,56 @@ int create_code_array(commands_struct* commands, code_struct* code)
 
     char cmd[BUFF_SIZE] = "";
     int value = 0;
+    int scanned_symbols = 0;
 
     for (size_t i = 0; i < commands->number_of_commands; i++)
     {
-        sscanf(commands->array_of_commands[i], "%s", cmd);
+        sscanf(commands->array_of_commands[i], "%s%n", cmd, &scanned_symbols);
 
         if (strcmp(cmd, "PUSH") == 0)
         {
-            codePushChar(&code, CMD_PUSH);
+            codePushChar(code, CMD_PUSH);
             if (code->err)
             {
                 free_buffer(commands);
                 return code->err;
             }
 
-            sscanf(commands->array_of_commands[i] + LENGTH_OF_PUSH, "%d", &value);
+            sscanf(commands->array_of_commands[i] + scanned_symbols + SPACE, "%d", &value);
+            codePushInt(code, value);
         }
-
-
-
 
         else if (strcmp(cmd, "ADD") == 0)
         {
-            codePushChar(cmd);
-
-//            data[counter] = CMD_ADD;
-//            counter++;
+            codePushChar(code, CMD_ADD);
         }
         else if (strcmp(cmd, "SUB") == 0)
         {
-//            data[counter] = CMD_SUB;
-//            counter++;
+            codePushChar(code, CMD_SUB);
         }
         else if (strcmp(cmd, "MUL") == 0)
         {
-//            data[counter] = CMD_MUL;
-//            counter++;
+            codePushChar(code, CMD_MUL);
         }
         else if (strcmp(cmd, "DIV") == 0)
         {
-//            data[counter] = CMD_DIV;
-//            counter++;
+            codePushChar(code, CMD_DIV);
         }
         else if (strcmp(cmd, "OUT") == 0)
         {
-//            data[counter] = CMD_OUT;
-//            counter++;
+            codePushChar(code, CMD_OUT);
         }
-        else if (strcmp(cmd, "HLT") == 0)
+        else if (strcmp(cmd, "IN") == 0)
         {
-//            data[counter] = CMD_HLT;
-//            counter++;
+            codePushChar(code, CMD_IN);
         }
         else if (strcmp(cmd, "DUMP") == 0)
         {
-//            data[counter] = CMD_DUMP;
-//            counter++;
+            codePushChar(code, CMD_DUMP);
+        }
+        else if (strcmp(cmd, "HLT") == 0)
+        {
+            codePushChar(code, CMD_HLT);
         }
         else
         {
