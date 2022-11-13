@@ -101,7 +101,7 @@ static void codePushInt(code_struct* code, int value)
         }
     }
 
-    int* ptr = (int*)(code->pointer + code->offset - 1);
+    int* ptr = (int*)(code->pointer + code->offset);
     *ptr = value;
 
     code->offset += 4;
