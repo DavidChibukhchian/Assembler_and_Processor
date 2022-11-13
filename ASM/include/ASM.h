@@ -36,12 +36,6 @@ struct code_struct
     int err;
 };
 
-struct code_struct_old
-{
-    int* pointer;
-    size_t number_of_elements;
-};
-
 int create_code_array(commands_struct* commands, code_struct* code);
 
 #endif

@@ -5,7 +5,7 @@ enum Errors
 {
     Done_Successfully                  = 0,
     Failed_To_Create_Logfile           = 1,
-    Incorrect_CMD_Arguments            = 2,
+    Incorrect_Number_Of_CMD_Arguments  = 2,
     Failed_To_Open_Input_File          = 3,
     Input_File_Is_Empty                = 4,
     Failed_To_Create_Buffer            = 5,
