@@ -11,8 +11,9 @@ const char* error_message[] = { "Done Successfully",
                                 "Failed to create buffer",
                                 "Failed to create array of commands",
                                 "Failed to create array of code",
+                                "Failed to resize array of code",
                                 "Invalid syntax",
-                                "Failed to create output file"};
+                                "Failed to create output file" };
 
 //----------------------------------------------------------------------------------------------------------------------
 

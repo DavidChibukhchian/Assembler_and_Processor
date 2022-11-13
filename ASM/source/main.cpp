@@ -33,9 +33,11 @@ int main(int argc, char* argv[])
     FILE* ASM_out = fopen("ASM_out.bin", "wb");
     ASSERT(ASM_out != nullptr, Failed_To_Create_Output_File, (fclose(ASM_in), free(code.pointer)));
 
-    fwrite(code.pointer, sizeof(int), code.number_of_elements, ASM_out);
+    fwrite(code.pointer, sizeof(char), code.offset, ASM_out);
 
     fclose(ASM_out);
+    fclose(logfile);
+    free(code.pointer);
 
     printf("---\nDone successfully\n---");
     return 0;
