@@ -2,11 +2,12 @@
 #include "CPU.h"
 #include "Logger.h"
 
+#define NUMBER_OF_REGISTERS 4
+
 int main(int argc, char* argv[])
 {
     int err = 0;
-
-    int registers[4] = {11, 22, 33, 44};
+    int registers[NUMBER_OF_REGISTERS] = {0};
 
     FILE* logfile = fopen("CPU_logfile.txt",  "w");
     if (logfile == nullptr)
@@ -15,10 +16,13 @@ int main(int argc, char* argv[])
         return Failed_To_Create_Logfile;
     }
 
-    ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments,);
+    ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments);
 
     FILE* ASM_out = fopen(argv[1], "rb");
-    ASSERT(ASM_out != nullptr, Failed_To_Open_Input_File,);
+    ASSERT(ASM_out != nullptr, Failed_To_Open_Input_File);
+
+    err = check_file(ASM_out);
+    VERIFY(err);
 
     char* code = read_code_to_buffer(ASM_out, &err);
     VERIFY(err);
