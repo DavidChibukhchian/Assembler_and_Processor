@@ -1,14 +1,14 @@
-#include <stdio.h>
-#include <malloc.h>
-#include "Buffer.h"
-#include "ASM.h"
+#include "Stack.h"
+#include "CPU.h"
 #include "Logger.h"
 
 int main(int argc, char* argv[])
 {
     int err = 0;
 
-    FILE* logfile = fopen("ASM_logfile.txt",  "w");
+    int registers[4] = {11, 22, 33, 44};
+
+    FILE* logfile = fopen("CPU_logfile.txt",  "w");
     if (logfile == nullptr)
     {
         printf("---\nERROR: Failed to create logfile\n---");
@@ -17,27 +17,20 @@ int main(int argc, char* argv[])
 
     ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments,);
 
-    FILE* ASM_in = fopen(argv[1], "r");
-    ASSERT(ASM_in != nullptr, Failed_To_Open_Input_File,);
+    FILE* ASM_out = fopen(argv[1], "rb");
+    ASSERT(ASM_out != nullptr, Failed_To_Open_Input_File,);
 
-    commands_struct commands = {};
-    err = record_commands_to_buffer(ASM_in, &commands);
-    VERIFY(err);
-    fclose(ASM_in);
-
-    code_struct code = {};
-    err = create_code_array(&commands, &code);
+    char* code = read_code_to_buffer(ASM_out, &err);
     VERIFY(err);
 
-    FILE* ASM_out = fopen("ASM_out.bin", "wb");
-    ASSERT(ASM_out != nullptr, Failed_To_Create_Output_File, (fclose(ASM_in), free(code.pointer)));
+    Stack stk = {};
+    stackCtor(&stk);
 
-    fwrite(code.pointer, sizeof(char), code.offset, ASM_out);
+    err = run_code(code, &stk, registers);
+    VERIFY(err);
 
-    fclose(ASM_out);
-    fclose(logfile);
-    free(code.pointer);
+    stackDisplay(&stk);
+    stackDtor(&stk);
 
-    printf("---\nDone successfully\n---");
     return 0;
 }
