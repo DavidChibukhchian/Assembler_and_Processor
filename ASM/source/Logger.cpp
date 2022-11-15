@@ -7,17 +7,26 @@ const char* error_messages[] = { "Done Successfully",                           
                                  "Failed to create logfile",                    // 1
                                  "Incorrect number of command line arguments",  // 2
                                  "Failed to open input file",                   // 3
-                                 "Input file is empty",                         // 4
-                                 "Failed to create buffer",                     // 5
-                                 "Missed HLT command",                          // 6
-                                 "Too few elements in stack",                   // 7
-                                 "Entered invalid value",                       // 8
-                                 "Failed to create dump file",                  // 9
-                                 "Failed to create array of commands",          // 10
-                                 "Failed to create array of code",              // 11
-                                 "Failed to resize array of code",              // 12
-                                 "Invalid syntax",                              // 13
-                                 "Failed to create output file" };              // 14
+
+                                 "Invalid type of input file",                  // 4
+                                 "Outdated version of code",                    // 5
+                                 "Incorrect version of code",                   // 6
+                                 "Input file is empty",                         // 7
+
+                                 "Failed to create buffer",                     // 8
+                                 "Failed to write code to file",                // 9
+                                 "Missed HLT command",                          // 10
+                                 "Too few elements in stack",                   // 11
+
+                                 "Division by zero",                            // 12
+                                 "Entered invalid value",                       // 13
+                                 "Failed to create dump file",                  // 14
+                                 "Failed to create array of commands",          // 15
+
+                                 "Failed to create array of code",              // 16
+                                 "Failed to resize array of code",              // 17
+                                 "Invalid syntax",                              // 18
+                                 "Failed to create output file" };              // 19
 
 //----------------------------------------------------------------------------------------------------------------------
 

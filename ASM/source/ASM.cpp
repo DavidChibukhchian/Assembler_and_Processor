@@ -10,17 +10,28 @@
 #define BUFF_SIZE 35
 #define SPACE 1
 
+//----------------------------------------------------------------------------------------------------------------------
+
+static const int SIGNATURE = 0x123ABCD;
+static const char  VERSION = 7;
+
+#define SIZEOF_SIGNATURE sizeof(int)
+#define SIZEOF_VERSION   sizeof(char)
+
+//----------------------------------------------------------------------------------------------------------------------
+
 enum Commands
 {
     CMD_HLT  = 0,
     CMD_PUSH = 1,
-    CMD_ADD  = 2,
-    CMD_SUB  = 3,
-    CMD_MUL  = 4,
-    CMD_DIV  = 5,
-    CMD_OUT  = 6,
-    CMD_IN   = 7,
-    CMD_DUMP = 8
+    CMD_POP  = 2,
+    CMD_ADD  = 3,
+    CMD_SUB  = 4,
+    CMD_MUL  = 5,
+    CMD_DIV  = 6,
+    CMD_OUT  = 7,
+    CMD_IN   = 8,
+    CMD_DUMP = 9
 };
 
 enum ARG_type
@@ -80,21 +91,6 @@ static void codeExpand(code_struct* code)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void codeCtor(code_struct* code, size_t number_of_commands)
-{
-    code->err    = 0;
-    code->offset = 0;
-    code->size   = number_of_commands;
-
-    code->pointer = (char*)calloc (number_of_commands, sizeof(char));
-    if (code->pointer == nullptr)
-    {
-        code->err = Failed_To_Create_Array_Of_Code;
-    }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-
 static void codePushChar(code_struct* code, char value)
 {
     if (code->offset == code->size)
@@ -130,6 +126,38 @@ static void codePushInt(code_struct* code, int value)
     *ptr = value;
 
     code->offset += sizeof(int);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static void codePushSignature(code_struct* code)
+{
+    codePushInt(code, SIGNATURE);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static void codePushVersion(code_struct* code)
+{
+    codePushChar(code, VERSION);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static void codeCtor(code_struct* code, size_t number_of_commands)
+{
+    code->err    = 0;
+    code->offset = 0;
+    code->size   = SIZEOF_SIGNATURE + SIZEOF_VERSION + number_of_commands;
+
+    code->pointer = (char*)calloc (code->size, sizeof(char));
+    if (code->pointer == nullptr)
+    {
+        code->err = Failed_To_Create_Array_Of_Code;
+    }
+
+    codePushSignature(code);
+    codePushVersion(code);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -234,6 +262,30 @@ int create_code_array(commands_struct* commands, code_struct* code)
             }
         }
 
+        else if (strcmp(cmd, "pop") == 0)
+        {
+            codePushChar(code, CMD_POP);
+
+            sscanf(commands->array_of_commands[i] + scanned_symbols + SPACE, "%s%n", cmd, &scanned_symbols);
+            if ((scanned_symbols == 3) && (cmd[0] == 'r') && (cmd[2] == 'x'))
+            {
+                codePushChar(code, ARG_REG);
+                codePushChar(code, cmd[1] - 'a');
+            }
+            else
+            {
+                free_buffer(commands);
+                free(code->pointer);
+                return Invalid_Syntax;
+            }
+
+            if (code->err)
+            {
+                free_buffer(commands);
+                return code->err;
+            }
+        }
+
         else if (strcmp(cmd, "add") == 0)
         {
             codePushChar(code, CMD_ADD);
@@ -243,6 +295,7 @@ int create_code_array(commands_struct* commands, code_struct* code)
                 return code->err;
             }
         }
+
         else if (strcmp(cmd, "sub") == 0)
         {
             codePushChar(code, CMD_SUB);
@@ -252,6 +305,7 @@ int create_code_array(commands_struct* commands, code_struct* code)
                 return code->err;
             }
         }
+
         else if (strcmp(cmd, "mul") == 0)
         {
             codePushChar(code, CMD_MUL);
@@ -261,27 +315,33 @@ int create_code_array(commands_struct* commands, code_struct* code)
                 return code->err;
             }
         }
+
         else if (strcmp(cmd, "div") == 0)
         {
             codePushChar(code, CMD_DIV);
         }
+
         else if (strcmp(cmd, "out") == 0)
         {
             codePushChar(code, CMD_OUT);
         }
+
         else if (strcmp(cmd, "in") == 0)
         {
             codePushChar(code, CMD_IN);
         }
+
         else if (strcmp(cmd, "dump") == 0)
         {
             codePushChar(code, CMD_DUMP);
         }
+
         else if (strcmp(cmd, "hlt") == 0)
         {
             HLT_was_set = true;
             codePushChar(code, CMD_HLT);
         }
+
         else
         {
             free_buffer(commands);
@@ -311,12 +371,22 @@ int create_code_array(commands_struct* commands, code_struct* code)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void write_code_to_file(code_struct* code, FILE* ASM_out)
+int write_code_to_file(code_struct* code, FILE* ASM_out)
 {
-    fwrite(code->pointer, sizeof(char), code->offset, ASM_out);
+    size_t written_bytes = 0;
+    written_bytes = fwrite(code->pointer, sizeof(char), code->offset, ASM_out);
+
+    if (written_bytes != code->offset)
+    {
+        fclose(ASM_out);
+        free(code->pointer);
+        return Failed_To_Write_Code_To_File;
+    }
 
     fclose(ASM_out);
     free(code->pointer);
+
+    return Done_Successfully;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
