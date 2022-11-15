@@ -4,7 +4,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 
 static const canary_t CANARY = 0xABCDE12345;
-static const elem_t   POISON = 0x111ABCDE;
+const elem_t          POISON = 0x111ABCDE;
 static const int      MULTIPLIER = 2;
 static const size_t   BUFFER_SIZE_MAX = 1e7;
 
@@ -575,6 +575,20 @@ int stackDisplay(Stack* stk)
     printf("\n---------------------------------------\n");
 
     return Done_Successfully;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void stackDump(const Stack* stk, FILE* dump_file)
+{
+    fprintf(dump_file, "\nStack:");
+    for (size_t i = 0; i < stk->capacity; i++)
+    {
+        if (stk->first_elem[i] == POISON)
+            fprintf(dump_file, "\n[%zu] = POISON", i);
+        else
+            fprintf(dump_file, "\n[%zu] = %d", i, stk->first_elem[i]);
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------

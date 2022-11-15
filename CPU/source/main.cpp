@@ -6,6 +6,8 @@ int main(int argc, char* argv[])
 {
     int err = 0;
 
+    int registers[4] = {11, 22, 33, 44};
+
     FILE* logfile = fopen("CPU_logfile.txt",  "w");
     if (logfile == nullptr)
     {
@@ -20,12 +22,12 @@ int main(int argc, char* argv[])
 
     char* code = read_code_to_buffer(ASM_out, &err);
     VERIFY(err);
-    fclose(ASM_out);
 
     Stack stk = {};
     stackCtor(&stk);
 
-    run_code(code, &stk);
+    err = run_code(code, &stk, registers);
+    VERIFY(err);
 
     stackDisplay(&stk);
     stackDtor(&stk);
