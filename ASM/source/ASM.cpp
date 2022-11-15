@@ -319,27 +319,52 @@ int create_code_array(commands_struct* commands, code_struct* code)
         else if (strcmp(cmd, "div") == 0)
         {
             codePushChar(code, CMD_DIV);
+            if (code->err)
+            {
+                free_buffer(commands);
+                return code->err;
+            }
         }
 
         else if (strcmp(cmd, "out") == 0)
         {
             codePushChar(code, CMD_OUT);
+            if (code->err)
+            {
+                free_buffer(commands);
+                return code->err;
+            }
         }
 
         else if (strcmp(cmd, "in") == 0)
         {
             codePushChar(code, CMD_IN);
+            if (code->err)
+            {
+                free_buffer(commands);
+                return code->err;
+            }
         }
 
         else if (strcmp(cmd, "dump") == 0)
         {
             codePushChar(code, CMD_DUMP);
+            if (code->err)
+            {
+                free_buffer(commands);
+                return code->err;
+            }
         }
 
         else if (strcmp(cmd, "hlt") == 0)
         {
             HLT_was_set = true;
             codePushChar(code, CMD_HLT);
+            if (code->err)
+            {
+                free_buffer(commands);
+                return code->err;
+            }
         }
 
         else
