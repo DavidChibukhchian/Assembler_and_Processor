@@ -14,7 +14,6 @@
 #define VERIFY(err) {  if (err)                    \
                        {                           \
                            dump(logfile, err);     \
-                           fclose(ASM_in);         \
                            fclose(logfile);        \
                            return err;             \
                        }                           }
@@ -37,5 +36,7 @@ struct code_struct
 };
 
 int create_code_array(commands_struct* commands, code_struct* code);
+
+void write_code_to_file(code_struct* code, FILE* ASM_out);
 
 #endif
