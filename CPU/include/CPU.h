@@ -19,8 +19,14 @@
                            return err;             \
                        }                           }
 
+struct code_struct
+{
+    char* code;
+    size_t size;
+};
+
 char* read_code_to_buffer(FILE* ASM_out, int* err);
 
-void run_code(char* code, Stack* stk);
+int run_code(char* code, Stack* stk, int* registers);
 
 #endif //CPU_CPU_H

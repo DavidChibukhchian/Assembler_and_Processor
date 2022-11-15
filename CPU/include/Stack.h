@@ -33,17 +33,19 @@ struct Stack
     canary_t right_struct_canary;
 };
 
-int stackCtor (Stack* stk, size_t init_capacity = 1);
+int stackCtor(Stack* stk, size_t init_capacity = 1);
 
-int stackPush (Stack* stk, elem_t value);
+int stackPush(Stack* stk, elem_t value);
 
-int stackPop  (Stack* stk, elem_t* top = nullptr);
+int stackPop(Stack* stk, elem_t* top = nullptr);
 
-int stackTop  (Stack* stk, elem_t* top);
+int stackTop(Stack* stk, elem_t* top);
 
-int stackDtor (Stack* stk);
+int stackDtor(Stack* stk);
 
-int stackDisplay (Stack* stk);
+int stackDisplay(Stack* stk);
+
+void stackDump(const Stack* stk, FILE* dump_file);
 
 
 #endif //CPU_STACK_H
