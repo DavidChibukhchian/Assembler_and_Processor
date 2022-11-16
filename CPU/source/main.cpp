@@ -1,20 +1,15 @@
 #include "Stack.h"
 #include "CPU.h"
-#include "Logger.h"
 
-#define NUMBER_OF_REGISTERS 4
+#define NUMBER_OF_REGISTERS 5
 
 int main(int argc, char* argv[])
 {
     int err = 0;
-    int registers[NUMBER_OF_REGISTERS] = {0};
+    int reg[NUMBER_OF_REGISTERS] = {0};
 
     FILE* logfile = fopen("CPU_logfile.txt",  "w");
-    if (logfile == nullptr)
-    {
-        printf("---\nERROR: Failed to create logfile\n---");
-        return Failed_To_Create_Logfile;
-    }
+    CHECK_LOGFILE(logfile);
 
     ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments);
 
@@ -30,8 +25,10 @@ int main(int argc, char* argv[])
     Stack stk = {};
     stackCtor(&stk);
 
-    err = run_code(code, &stk, registers);
+    err = run_code(code, &stk, reg);
     VERIFY(err);
+
+    printf("%d %d %d %d", reg[1], reg[2], reg[3], reg[4]);
 
     stackDisplay(&stk);
     stackDtor(&stk);

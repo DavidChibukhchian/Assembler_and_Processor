@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <sys\stat.h>
+
 #include "CPU.h"
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -137,7 +138,7 @@ void fprintf_line(FILE* dump_file, size_t ip)
 
 void CPU_Dump(char* code, FILE* dump_file, size_t ip)
 {
-    int size = _msize(code);
+    int size = _msize(code) - SIZEOF_SIGNATURE - SIZEOF_VERSION;
 
     fprintf_bytes(dump_file, size);
 
@@ -177,7 +178,7 @@ static int check_stack(const Stack* stk, Commands command)
     if (stk->size < min_number_of_elements)
         return Too_Few_Elements_In_Stack;
 
-    if ((command == CMD_DIV) && (stk->top_elem == 0))
+    if ((command == CMD_DIV) && (*stk->top_elem == 0))
         return Division_By_Zero;
 
     return Done_Successfully;
@@ -221,7 +222,7 @@ char* read_code_to_buffer(FILE* ASM_out, int* err)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-int run_code(char* code, Stack* stk, int* registers)
+int run_code(char* code, Stack* stk, int* reg)
 {
     size_t ip = 0;
     int num1, num2 = 0;
@@ -243,7 +244,7 @@ int run_code(char* code, Stack* stk, int* registers)
 
                     case ARG_REG:
                         ip++;
-                        stackPush(stk, *(registers + code[ip]));
+                        stackPush(stk, *(reg + code[ip]));
                         ip++;
                         break;
 
@@ -262,7 +263,7 @@ int run_code(char* code, Stack* stk, int* registers)
                 }
 
                 ip += 2;
-                stackPop(stk, registers + code[ip]);
+                stackPop(stk, reg + code[ip]);
                 ip++;
 
                 break;
