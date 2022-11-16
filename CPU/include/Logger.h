@@ -29,6 +29,8 @@ enum Errors
     Failed_To_Create_Output_File       = 19
 };
 
-void dump(FILE* logfile, int err);
+void dump_to_console(int err);
+
+void dump_to_logfile(FILE* logfile, int err);
 
 #endif
