@@ -2,23 +2,18 @@
 #include <malloc.h>
 #include "Buffer.h"
 #include "ASM.h"
-#include "Logger.h"
 
 int main(int argc, char* argv[])
 {
     int err = 0;
 
     FILE* logfile = fopen("ASM_logfile.txt",  "w");
-    if (logfile == nullptr)
-    {
-        printf("---\nERROR: Failed to create logfile\n---");
-        return Failed_To_Create_Logfile;
-    }
+    CHECK_LOGFILE(logfile);
 
-    ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments,);
+    ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments,{});
 
     FILE* ASM_in = fopen(argv[1], "r");
-    ASSERT(ASM_in != nullptr, Failed_To_Open_Input_File,);
+    ASSERT(ASM_in != nullptr, Failed_To_Open_Input_File,{});
 
     commands_struct commands = {};
     err = record_commands_to_buffer(ASM_in, &commands);

@@ -30,12 +30,17 @@ const char* error_messages[] = { "Done Successfully",                           
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void dump(FILE* logfile, int err)
+void dump_to_console(int err)
 {
     printf("---\nERROR: ");
     printf(error_messages[err]);
     printf("\n---");
+}
 
+//----------------------------------------------------------------------------------------------------------------------
+
+void dump_to_logfile(FILE* logfile, int err)
+{
     fprintf(logfile, "ERROR: ");
     fprintf(logfile, error_messages[err]);
     fprintf(logfile, "\n");
