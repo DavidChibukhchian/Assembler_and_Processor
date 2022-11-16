@@ -3,20 +3,28 @@
 
 #include "Logger.h"
 
-#define ASSERT(condition, err, code) {  if (!(condition))           \
-                                        {                           \
-                                            code;                   \
-                                            dump(logfile, err);     \
-                                            fclose(logfile);        \
-                                            return err;             \
-                                        }                           }
+#define CHECK_LOGFILE(logfile) { if (logfile == nullptr)                                       \
+                                {                                                              \
+                                      printf("---\nERROR: Failed to create logfile\n---");     \
+                                      return Failed_To_Create_Logfile;                         \
+                                }                                                              }
 
-#define VERIFY(err) {  if (err)                    \
-                       {                           \
-                           dump(logfile, err);     \
-                           fclose(logfile);        \
-                           return err;             \
-                       }                           }
+#define ASSERT(condition, err, code) {  if (!(condition))                      \
+                                        {                                      \
+                                            code;                              \
+                                            dump_to_console(err);              \
+                                            dump_to_logfile(logfile, err);     \
+                                            fclose(logfile);                   \
+                                            return err;                        \
+                                        }                                      }
+
+#define VERIFY(err) {  if (err)                               \
+                       {                                      \
+                           dump_to_console(err);              \
+                           dump_to_logfile(logfile, err);     \
+                           fclose(logfile);                   \
+                           return err;                        \
+                       }                                      }
 
 struct commands_struct
 {
