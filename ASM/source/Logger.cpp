@@ -26,7 +26,8 @@ const char* error_messages[] = { "Done Successfully",                           
                                  "Failed to create array of code",              // 16
                                  "Failed to resize array of code",              // 17
                                  "Invalid syntax",                              // 18
-                                 "Failed to create output file" };              // 19
+                                 "Nonexistent register",                        // 19
+                                 "Failed to create output file" };              // 20
 
 //----------------------------------------------------------------------------------------------------------------------
 

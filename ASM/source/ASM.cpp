@@ -5,22 +5,21 @@
 
 #include "ASM.h"
 
-unsigned char ARG_num = 128;
-unsigned char ARG_reg = 64;
-unsigned char ARG_ram = 32;
+unsigned char ARG_num = 1 << 7;
+unsigned char ARG_reg = 1 << 6;
+unsigned char ARG_ram = 1 << 5;
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define MULTIPLIER 1.5
+#define MULTIPLIER 1.5    //todo static const
 #define BUFF_SIZE 35
-#define SPACE 1
 
 //----------------------------------------------------------------------------------------------------------------------
 
 static const int SIGNATURE = 0x123ABCD;
 static const char  VERSION = 7;
 
-#define SIZEOF_SIGNATURE sizeof(int)
+#define SIZEOF_SIGNATURE sizeof(int)       //todo static const
 #define SIZEOF_VERSION   sizeof(char)
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -37,17 +36,6 @@ enum Commands
 #undef DEF_CMD
 
 //----------------------------------------------------------------------------------------------------------------------
-
-//#define DEF_CMD(name, arg_type, code) \
-//arg_type,
-//
-//enum ARG_type
-//{
-//#include "cmd.h"
-//};
-//
-//#undef DEF_CMD
-
 
 enum ARG_type
 {
@@ -136,19 +124,20 @@ static void codePush_Int(code_struct* code, int value)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int check_no_args(commands_struct* commands, size_t i, size_t scanned_symbols)
+static int check_no_args(commands_struct* commands, size_t i, size_t cmd_name)
 {
     int  test_value = 0;
     char test_str[BUFF_SIZE] = "";
 
-    size_t scanned_symbols_test_1 = 0;
-    size_t scanned_symbols_test_2 = 0;
+    size_t test_scanned_symbols_1 = 0;
+    size_t test_scanned_symbols_2 = 0;
 
-    sscanf(commands->array_of_commands[i] + scanned_symbols, "%d%n", &test_value, &scanned_symbols_test_1);
-    sscanf(commands->array_of_commands[i] + scanned_symbols, "%s%n",  test_str,   &scanned_symbols_test_2);
+    sscanf(commands->array_of_commands[i] + cmd_name, "%d%n", &test_value, &test_scanned_symbols_1);
+    sscanf(commands->array_of_commands[i] + cmd_name, "%s%n", test_str,    &test_scanned_symbols_2);
 
-    if (scanned_symbols_test_1 | scanned_symbols_test_2)
+    if (test_scanned_symbols_1 | test_scanned_symbols_2)
     {
+//        printf("here");
         return Invalid_Syntax;
     }
 
@@ -157,40 +146,43 @@ static int check_no_args(commands_struct* commands, size_t i, size_t scanned_sym
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int identify_args(unsigned char* args_mask, char* cmd, commands_struct* commands, size_t i, size_t scanned_symbols, int* number_of_register, int* value)
+static int identify_args(unsigned char* arg_mask, char* cmd, commands_struct* commands, size_t i, size_t cmd_name, int* reg, int* value)
 {
     size_t counter = 0;
 
-    if(check_no_args(commands, i, scanned_symbols))
+    if (!check_no_args(commands, i, cmd_name)) // todo naming
     {
-//        printf("here");
         return Invalid_Syntax;
     }
+    cmd_name++;
 
-    if (sscanf(commands->array_of_commands[i] + scanned_symbols + SPACE, "%d%n", value, &counter))
+    if (sscanf(commands->array_of_commands[i] + cmd_name, "%d%n", value, &counter))
     {
-        if (check_no_args(commands, i, scanned_symbols + SPACE + counter))
+        if (check_no_args(commands, i, cmd_name + counter))
         {
-//            printf("here");
             return Invalid_Syntax;
         }
 
-        *args_mask | ARG_num;
+        *arg_mask = (*arg_mask) | ARG_num;
         return Done_Successfully;
     }
 
-    else if (sscanf(commands->array_of_commands[i] + scanned_symbols + SPACE, "%s%n", cmd, &counter))
+    if (sscanf(commands->array_of_commands[i] + cmd_name, "%s%n", cmd, &counter))
     {
-        if (check_no_args(commands, i, scanned_symbols + SPACE + counter))
+        if (check_no_args(commands, i, cmd_name + counter))
         {
-//            printf("here");
             return Invalid_Syntax;
         }
 
-        else if ((counter == 3) && (cmd[0] == 'r') && (cmd[2] == 'x'))
+        if ((counter == 3) && (cmd[0] == 'r') && (cmd[counter - 1] == 'x'))
         {
-            *args_mask | ARG_reg;
-            *number_of_register = cmd[1] - 'a' + 1;
+            if ((cmd[1] - 'a') > ('d' - 'a'))
+            {
+                return Nonexistent_Register;
+            }
+
+            *arg_mask = (*arg_mask) | ARG_reg;
+            *reg = cmd[1] - 'a' + 1;
             return Done_Successfully;
         }
 
@@ -198,59 +190,71 @@ static int identify_args(unsigned char* args_mask, char* cmd, commands_struct* c
         {
             if ((cmd[1] == 'r') && (cmd[3] == 'x'))
             {
-                *args_mask | ARG_reg;
-                *number_of_register = cmd[1] - 'a' + 1;
-
-                *args_mask | ARG_ram;
-
-                if (cmd[4] != '+')
+                if ((cmd[2] - 'a') > ('d' - 'a'))
                 {
-//                    printf("here");
+                    return Nonexistent_Register;
+                }
+                *arg_mask = (*arg_mask) | ARG_reg;
+                *reg = cmd[1] - 'a' + 1;
+
+                *arg_mask = (*arg_mask) | ARG_ram;
+
+                if ((cmd[4] == '+') && (sscanf(commands->array_of_commands[i] + cmd_name + 1 + 3 + 1, "%d", value)))
+                {
+                    *arg_mask = (*arg_mask) | ARG_num;
+                    return Done_Successfully;
+                }
+                if ((cmd[4] == '+') && (!sscanf(commands->array_of_commands[i] + cmd_name + 1 + 3 + 1, "%d", value)))
+                {
+                    return Invalid_Syntax;
+                }
+                if ((cmd[4] != '+') && (sscanf(commands->array_of_commands[i] + cmd_name + 1 + 3, "%d", value)))
+                {
+                    return Invalid_Syntax;
+                }
+                if (!sscanf(commands->array_of_commands[i] + cmd_name + 1 + 3 + 1, "%d", value))
+                {
                     return Invalid_Syntax;
                 }
 
-                if (!sscanf(commands->array_of_commands[i] + scanned_symbols + SPACE + 1 + 3 + 1, "%d", value))
-                {
-//                    printf("here");
-                    return Invalid_Syntax;
-                }
+                *arg_mask | ARG_num;
+                return Done_Successfully;
+            }
 
-                *args_mask | ARG_num;
+            if (sscanf(commands->array_of_commands[i] + cmd_name + 1, "%d", value))
+            {
+                *arg_mask = (*arg_mask) | ARG_ram;
+                *arg_mask = (*arg_mask) | ARG_num;
                 return Done_Successfully;
             }
             else
             {
-//                printf("here");
                 return Invalid_Syntax;
             }
         }
         else
         {
-//            printf("here");
             return Invalid_Syntax;
         }
     }
     else
     {
-//        printf("here");
         return Invalid_Syntax;
     }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int make_arg_mask(unsigned char* args_mask, char* cmd, commands_struct* commands, size_t i, size_t scanned_symbols, ARG_type arg_type, int* number_of_register, int* value)
+static int make_arg_mask(unsigned char* args_mask, char* cmd, commands_struct* commands, size_t i, size_t cmd_name, ARG_type arg_type, int* number_of_register, int* value)
 {
     int err = 0;
-
     if (arg_type == NO_ARGS)
     {
-        err = check_no_args(commands, i, scanned_symbols);
+        err = check_no_args(commands, i, cmd_name);
     }
-
     else
     {
-        err = identify_args(args_mask, cmd, commands, i, scanned_symbols, number_of_register, value);
+        err = identify_args(args_mask, cmd, commands, i, cmd_name, number_of_register, value);
     }
 
     if (err)
@@ -264,16 +268,16 @@ static int make_arg_mask(unsigned char* args_mask, char* cmd, commands_struct* c
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void codePush_Command(code_struct* code, unsigned char byte, int number_of_register, int value)
+static void codePush_Command(code_struct* code, unsigned char cmd_code, int reg, int value)
 {
-    codePush_Char(code, byte);
+    codePush_Char(code, cmd_code);
 
-    if (byte & ARG_reg)
+    if (cmd_code & ARG_reg)
     {
-        codePush_Char(code, number_of_register);
+        codePush_Char(code, reg);
     }
 
-    if (byte & ARG_num)
+    if (cmd_code & ARG_num)
     {
         codePush_Int(code, value);
     }
@@ -360,7 +364,7 @@ int record_commands_to_buffer(FILE* ASM_in, commands_struct* commands)
 int create_code_array(commands_struct* commands, code_struct* code)
 {
     unsigned char arg_mask = 0;
-    unsigned char byte = 0;
+    unsigned char cmd_code = 0;
 
     int HLT_was_set = false;
 
@@ -368,7 +372,7 @@ int create_code_array(commands_struct* commands, code_struct* code)
     VERIFY_CODE_ERR;
 
     char cmd[BUFF_SIZE] = "";
-    size_t scanned_symbols = 0;
+    size_t scanned_name = 0;
 
     int number_of_register = 0;
     int value = 0;
@@ -377,27 +381,25 @@ int create_code_array(commands_struct* commands, code_struct* code)
 
     for (size_t i = 0; i < commands->number_of_commands; i++)
     {
-        printf("1");
-        sscanf(commands->array_of_commands[i], "%s%n", cmd, &scanned_symbols);
+        sscanf(commands->array_of_commands[i], "%s%n", cmd, &scanned_name);
 
         if (false) {}
 
 #define DEF_CMD(name, arg_type, cpu)                                                                                   \
 else if (strcmp(cmd, #name) == 0)                                                                                      \
 {                                                                                                                      \
-    printf("1");                                                                                                       \
     arg_mask = 0;                                                                                                      \
-    code->err = make_arg_mask(&arg_mask, cmd, commands, i, scanned_symbols, arg_type, &number_of_register, &value);    \
+    code->err = make_arg_mask(&arg_mask, cmd, commands, i, scanned_name, arg_type, &number_of_register, &value);       \
     VERIFY_CODE_ERR;                                                                                                   \
-    byte = 0;                                                                                                          \
-    byte = CMD_##name | arg_mask;                                                                                      \
                                                                                                                        \
-    codePush_Command(code, byte, number_of_register, value);                                                           \
+    cmd_code = 0;                                                                                                  \
+    cmd_code = (CMD_##name) | arg_mask;                                                                              \
+                                                                                                                       \
+    codePush_Command(code, cmd_code, number_of_register, value);                                                   \
     VERIFY_CODE_ERR;                                                                                                   \
 }
 
 #include "cmd.h"
-
 #undef DEF_CMD
 
         else
@@ -406,7 +408,6 @@ else if (strcmp(cmd, #name) == 0)                                               
             if (code->pointer != nullptr)
                 free(code->pointer);
 
-            printf("here");
             return Invalid_Syntax;
         }
     }
@@ -414,7 +415,7 @@ else if (strcmp(cmd, #name) == 0)                                               
     codeShrinkToFit(code);
     VERIFY_CODE_ERR;
 
-    printf("%zu", code->offset);
+    printf("---\nSIZE = %zu\n(without signature and version)\n", code->offset - SIZEOF_SIGNATURE - SIZEOF_VERSION);
 
     free_buffer(commands);
 
@@ -440,150 +441,5 @@ int write_code_to_file(code_struct* code, FILE* ASM_out)
 
     return Done_Successfully;
 }
-
-//----------------------------------------------------------------------------------------------------------------------
-
-
-
-/*
-
-
-        if (strcmp(cmd, "push") == 0)
-        {
-            codePush_Char(code, CMD_PUSH);
-
-//----------------------------------------------------------------------------------------------------------------------
-            if (sscanf(commands->array_of_commands[i] + scanned_symbols + SPACE, "%d", &value))
-            {
-                codePush_Char(code, ARG_IMMED);
-                codePush_Int(code, value);
-            }
-            else
-            {
-                sscanf(commands->array_of_commands[i] + scanned_symbols + SPACE, "%s%n", cmd, &scanned_symbols);
-
-                if ((scanned_symbols == 3) && (cmd[0] == 'r') && (cmd[2] == 'x'))
-                {
-                    codePush_Char(code, ARG_REG);
-                    codePush_Char(code, cmd[1] - 'a' + 1);
-                }
-                else if (strcmp(cmd, "mem") == 0)
-                {
-                    codePush_Char(code, ARG_MEM);
-                }
-                else
-                {
-                    free_buffer(commands);
-                    free(code->pointer);
-                    return Invalid_Syntax;
-                }
-            }
-//----------------------------------------------------------------------------------------------------------------------
-
-            VERIFY_CODE_ERR;
-        }
-
-        else if (strcmp(cmd, "pop") == 0)
-        {
-            codePush_Char(code, CMD_POP);
-
-//----------------------------------------------------------------------------------------------------------------------
-
-            sscanf(commands->array_of_commands[i] + scanned_symbols + SPACE, "%s%n", cmd, &scanned_symbols);
-            if ((scanned_symbols == 3) && (cmd[0] == 'r') && (cmd[2] == 'x'))
-            {
-                codePush_Char(code, ARG_REG);
-                codePush_Char(code, cmd[1] - 'a' + 1);
-            }
-            else
-            {
-                free_buffer(commands);
-                free(code->pointer);
-                return Invalid_Syntax;
-            }
-//----------------------------------------------------------------------------------------------------------------------
-
-            VERIFY_CODE_ERR;
-        }
-
-        else if (strcmp(cmd, "add") == 0)
-        {
-            codePush_Command(code, CMD_ADD);
-
-            VERIFY_CODE_ERR;
-        }
-
-        else if (strcmp(cmd, "sub") == 0)
-        {
-            codePush_Command(code, CMD_SUB);
-
-            VERIFY_CODE_ERR;
-        }
-
-        else if (strcmp(cmd, "mul") == 0)
-        {
-            codePush_Command(code, CMD_MUL);
-
-            VERIFY_CODE_ERR;
-        }
-
-        else if (strcmp(cmd, "div") == 0)
-        {
-            codePush_Command(code, CMD_DIV);
-
-            VERIFY_CODE_ERR;
-        }
-
-        else if (strcmp(cmd, "out") == 0)
-        {
-            codePush_Command(code, CMD_OUT);
-
-            VERIFY_CODE_ERR;
-        }
-
-        else if (strcmp(cmd, "in") == 0)
-        {
-            codePush_Command(code, CMD_IN);
-
-            VERIFY_CODE_ERR;
-        }
-
-        else if (strcmp(cmd, "dump") == 0)
-        {
-            codePush_Command(code, CMD_DUMP);
-
-            VERIFY_CODE_ERR;
-        }
-
-        else if (strcmp(cmd, "hlt") == 0)
-        {
-            codePush_Command(code, CMD_HLT);
-
-            VERIFY_CODE_ERR;
-            HLT_was_set = true;
-        }
-
-        else
-        {
-            free_buffer(commands);
-            free(code->pointer);
-            return Invalid_Syntax;
-        }
-
-
-    }
-}
-
-
-
-    if (!HLT_was_set)
-    {
-        free_buffer(commands);
-        free(code->pointer);
-        return Missed_HLT_Command;
-    }
-
-
-*/
 
 //----------------------------------------------------------------------------------------------------------------------
