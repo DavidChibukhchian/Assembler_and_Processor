@@ -3,28 +3,7 @@
 
 #include "Logger.h"
 
-#define CHECK_LOGFILE(logfile) { if (logfile == nullptr)                                       \
-                                {                                                              \
-                                      printf("---\nERROR: Failed to create logfile\n---");     \
-                                      return Failed_To_Create_Logfile;                         \
-                                }                                                              }
-
-#define ASSERT(condition, err, code) {  if (!(condition))                      \
-                                        {                                      \
-                                            code;                              \
-                                            dump_to_console(err);              \
-                                            dump_to_logfile(logfile, err);     \
-                                            fclose(logfile);                   \
-                                            return err;                        \
-                                        }                                      }
-
-#define VERIFY(err) {  if (err)                               \
-                       {                                      \
-                           dump_to_console(err);              \
-                           dump_to_logfile(logfile, err);     \
-                           fclose(logfile);                   \
-                           return err;                        \
-                       }                                      }
+//----------------------------------------------------------------------------------------------------------------------
 
 struct commands_struct
 {
@@ -46,5 +25,51 @@ struct code_struct
 int create_code_array(commands_struct* commands, code_struct* code);
 
 int write_code_to_file(code_struct* code, FILE* ASM_out);
+
+//----------------------------------------------------------------------------------------------------------------------
+
+#define CHECK_LOGFILE(logfile)                               \
+if (logfile == nullptr)                                      \
+{                                                            \
+    printf("---\nERROR: Failed to create logfile\n---");     \
+    return Failed_To_Create_Logfile;                         \
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+#define VERIFY(err)                                          \
+if (err)                                                     \
+{                                                            \
+    dump_to_console(err);                                    \
+    dump_to_logfile(logfile, err);                           \
+    fclose(logfile);                                         \
+    return err;                                              \
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+#define ASSERT(condition, err, code)                         \
+if (!(condition))                                            \
+{                                                            \
+    code;                                                    \
+    dump_to_console(err);                                    \
+    dump_to_logfile(logfile, err);                           \
+    fclose(logfile);                                         \
+    return err;                                              \
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+#define VERIFY_CODE_ERR                                      \
+if (code->err)                                               \
+{                                                            \
+    if (code->pointer != nullptr)                            \
+        free(code->pointer);                                 \
+                                                             \
+    free_buffer(commands);                                   \
+    return code->err;                                        \
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 
 #endif
