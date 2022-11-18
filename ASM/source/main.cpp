@@ -6,7 +6,6 @@
 int main(int argc, char* argv[])
 {
     int err = 0;
-
     FILE* logfile = fopen("ASM_logfile.txt",  "w");
     CHECK_LOGFILE(logfile);
 
