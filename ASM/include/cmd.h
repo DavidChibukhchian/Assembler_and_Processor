@@ -1,5 +1,5 @@
-#ifndef _CMD_H
-#define _CMD_H
+//#ifndef _CMD_H
+//#define _CMD_H
 
 DEF_CMD(hlt,  NO_ARGS, {})
 
@@ -8,7 +8,10 @@ DEF_CMD(push, ARGS,
 
 })
 
-//DEF_CMD(POP,  arg, {})
+DEF_CMD(pop,  ARGS,
+{
+
+})
 
 DEF_CMD(add,  NO_ARGS,
 {
@@ -75,4 +78,4 @@ DEF_CMD(dump, NO_ARGS,
     ip++;
 })
 
-#endif
+//#endif

@@ -26,7 +26,8 @@ enum Errors
     Failed_To_Create_Array_Of_Code     = 16,
     Failed_To_Resize_Array_Of_Code     = 17,
     Invalid_Syntax                     = 18,
-    Failed_To_Create_Output_File       = 19
+    Nonexistent_Register               = 19,
+    Failed_To_Create_Output_File       = 20
 };
 
 void dump_to_console(int err);
