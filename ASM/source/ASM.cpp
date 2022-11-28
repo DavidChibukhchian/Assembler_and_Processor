@@ -1,26 +1,60 @@
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
-#include "Buffer.h"
-
 #include "ASM.h"
 
-unsigned char ARG_num = 1 << 7;
-unsigned char ARG_reg = 1 << 6;
-unsigned char ARG_ram = 1 << 5;
+static const unsigned char ARG_num = 1 << 7;
+static const unsigned char ARG_reg = 1 << 6;
+static const unsigned char ARG_ram = 1 << 5;
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define MULTIPLIER 1.5    //todo static const
-#define BUFF_SIZE 35
+static const float MULTIPLIER = 1.5;
+static const size_t BUFF_SIZE = 35;
 
 //----------------------------------------------------------------------------------------------------------------------
 
 static const int SIGNATURE = 0x123ABCD;
 static const char  VERSION = 7;
 
-#define SIZEOF_SIGNATURE sizeof(int)       //todo static const
-#define SIZEOF_VERSION   sizeof(char)
+static const size_t SIZE_OF_SIGNATURE = sizeof(int);
+static const size_t SIZE_OF_VERSION   = sizeof(char);
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void close_files(files_struct* files)
+{
+    fclose(files->ASM_in);
+    fclose(files->ASM_out);
+    fclose(files->logfile);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void open_logfile(files_struct* files)
+{
+    FILE* logfile = fopen("ASM_logfile.txt",  "w");
+    files->logfile = logfile;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+int open_files(files_struct* files, char** argv)
+{
+    FILE* ASM_in = fopen(argv[1], "r");
+    if (ASM_in == nullptr)
+    {
+        return Failed_To_Open_Input_File;
+    }
+    files->ASM_in = ASM_in;
+
+    FILE* ASM_out = fopen("ASM_out.bin", "wb");
+    if (ASM_out == nullptr)
+    {
+        fclose(files->ASM_in);
+        return Failed_To_Create_Output_File;
+    }
+    files->ASM_out = ASM_out;
+
+    return Done_Successfully;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -137,7 +171,6 @@ static int check_no_args(commands_struct* commands, size_t i, size_t cmd_name)
 
     if (test_scanned_symbols_1 | test_scanned_symbols_2)
     {
-//        printf("here");
         return Invalid_Syntax;
     }
 
@@ -245,16 +278,17 @@ static int identify_args(unsigned char* arg_mask, char* cmd, commands_struct* co
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int make_arg_mask(unsigned char* args_mask, char* cmd, commands_struct* commands, size_t i, size_t cmd_name, ARG_type arg_type, int* number_of_register, int* value)
+static int make_arg_mask(unsigned char* arg_mask, char* cmd, commands_struct* commands, size_t i, size_t cmd_name, ARG_type arg_type, int* number_of_register, int* value)
 {
     int err = 0;
+
     if (arg_type == NO_ARGS)
     {
         err = check_no_args(commands, i, cmd_name);
     }
     else
     {
-        err = identify_args(args_mask, cmd, commands, i, cmd_name, number_of_register, value);
+        err = identify_args(arg_mask, cmd, commands, i, cmd_name, number_of_register, value);
     }
 
     if (err)
@@ -303,7 +337,7 @@ static void codeCtor(code_struct* code, size_t number_of_commands)
 {
     code->err    = 0;
     code->offset = 0;
-    code->size   = SIZEOF_SIGNATURE + SIZEOF_VERSION + number_of_commands;
+    code->size   = SIZE_OF_SIGNATURE + SIZE_OF_VERSION + number_of_commands;
 
     code->pointer = (char*)calloc (code->size, sizeof(char));
     if (code->pointer == nullptr)
@@ -361,12 +395,12 @@ int record_commands_to_buffer(FILE* ASM_in, commands_struct* commands)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-int create_code_array(commands_struct* commands, code_struct* code)
+int create_code_array(code_struct* code, commands_struct* commands)
 {
     unsigned char arg_mask = 0;
     unsigned char cmd_code = 0;
 
-    int HLT_was_set = false;
+    bool HLT_was_set = false;
 
     codeCtor(code, commands->number_of_commands);
     VERIFY_CODE_ERR;
@@ -377,7 +411,7 @@ int create_code_array(commands_struct* commands, code_struct* code)
     int number_of_register = 0;
     int value = 0;
 
-    // hlt was set - исключение дял кодогенератора
+
 
     for (size_t i = 0; i < commands->number_of_commands; i++)
     {
@@ -385,37 +419,46 @@ int create_code_array(commands_struct* commands, code_struct* code)
 
         if (false) {}
 
-#define DEF_CMD(name, arg_type, cpu)                                                                                   \
-else if (strcmp(cmd, #name) == 0)                                                                                      \
-{                                                                                                                      \
-    arg_mask = 0;                                                                                                      \
-    code->err = make_arg_mask(&arg_mask, cmd, commands, i, scanned_name, arg_type, &number_of_register, &value);       \
-    VERIFY_CODE_ERR;                                                                                                   \
-                                                                                                                       \
-    cmd_code = 0;                                                                                                  \
-    cmd_code = (CMD_##name) | arg_mask;                                                                              \
-                                                                                                                       \
-    codePush_Command(code, cmd_code, number_of_register, value);                                                   \
-    VERIFY_CODE_ERR;                                                                                                   \
-}
+        //------------------------------------------------------------------
+        #define DEF_CMD(name, arg_type, cpu)                                                                            \
+        else if (!strcmp(cmd, #name))                                                                                   \
+        {                                                                                                               \
+            if (!strcmp("hlt", #name))                                                                                  \
+                HLT_was_set = true;                                                                                     \
+                                                                                                                        \
+            arg_mask = 0;                                                                                               \
+            code->err = make_arg_mask(&arg_mask, cmd, commands, i, scanned_name, arg_type, &number_of_register, &value);\
+            VERIFY_CODE_ERR;                                                                                            \
+                                                                                                                        \
+            cmd_code = 0;                                                                                               \
+            cmd_code = (CMD_##name) | arg_mask;                                                                         \
+                                                                                                                        \
+            codePush_Command(code, cmd_code, number_of_register, value);                                                \
+            VERIFY_CODE_ERR;                                                                                            \
+        }
 
-#include "cmd.h"
-#undef DEF_CMD
+        #include "cmd.h"
+        #undef DEF_CMD
+        //------------------------------------------------------------------
 
         else
         {
             free_buffer(commands);
             if (code->pointer != nullptr)
                 free(code->pointer);
-
             return Invalid_Syntax;
         }
+    }
+
+    if (!(HLT_was_set))
+    {
+        return Missed_HLT_Command;
     }
 
     codeShrinkToFit(code);
     VERIFY_CODE_ERR;
 
-    printf("---\nSIZE = %zu\n(without signature and version)\n", code->offset - SIZEOF_SIGNATURE - SIZEOF_VERSION);
+    printf("---\nSIZE = %zu\n(without signature and version)\n", code->offset - SIZE_OF_SIGNATURE - SIZE_OF_VERSION);
 
     free_buffer(commands);
 
@@ -436,7 +479,6 @@ int write_code_to_file(code_struct* code, FILE* ASM_out)
         return Failed_To_Write_Code_To_File;
     }
 
-    fclose(ASM_out);
     free(code->pointer);
 
     return Done_Successfully;

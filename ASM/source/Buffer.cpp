@@ -1,13 +1,10 @@
-#include <stdio.h>
-#include <sys\stat.h>
-#include <malloc.h>
 #include "Buffer.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 
 size_t get_filesize(FILE* filename)
 {
-    struct stat file_data{};
+    struct stat file_data = {};
     fstat(fileno(filename), &file_data);
 
     return file_data.st_size;
@@ -44,6 +41,7 @@ size_t count_lines(char* buffer)
         {
             number_of_lines++;
         }
+
         buffer++;
     }
 
@@ -60,6 +58,7 @@ void change_delimiter(char* buffer, char old_delimiter, char new_delimiter)
         {
             *buffer = new_delimiter;
         }
+
         buffer++;
     }
 }
@@ -70,24 +69,24 @@ char** split_buffer(char* buffer, size_t number_of_lines, size_t filesize)
 {
     change_delimiter(buffer, '\n', '\0');
     
-    char** text = (char**)calloc (number_of_lines, sizeof(char*));
-    if (text == nullptr)
+    char** array_of_commands = (char**)calloc (number_of_lines, sizeof(char*));
+    if (array_of_commands == nullptr)
     {
         return nullptr;
     }
 
-    char** text_i = text;
+    char** command = array_of_commands;
 
     for (char* ptr = buffer; ptr <= (buffer + filesize); ptr++)
     {
         if ( (*(ptr - 1) == '\0') && (*ptr != '\0') )
         {
-            *text_i = ptr;
-            text_i++;
+            *command = ptr;
+            command++;
         }
     }
 
-    return text;
+    return array_of_commands;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

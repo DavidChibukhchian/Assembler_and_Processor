@@ -1,34 +1,54 @@
-#include <stdio.h>
-#include <malloc.h>
-#include "Buffer.h"
 #include "ASM.h"
+#include <string.h>
+#include <cstring>
 
 int main(int argc, char* argv[])
 {
+
+
+    char str[] ="push [rax+10] 4";
+    char* pointer[10] = {nullptr};
+
+    pointer[0] = strtok(str, " ");
+
+    size_t i = 0;
+
+    while (pointer[i] != nullptr)
+    {
+        pointer[i + 1] = strtok(nullptr, " ");
+        i++;
+    }
+
+    for (size_t j = 0; j < i; j++)
+    {
+//        printf("%s\n", pointer[j]);
+    }
+
+
+
+    files_struct files = {};
+    open_logfile(&files);
+    CHECK_LOGFILE(files);
+
+    ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments);
+
     int err = 0;
-    FILE* logfile = fopen("ASM_logfile.txt",  "w");
-    CHECK_LOGFILE(logfile);
 
-    ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments,{});
-
-    FILE* ASM_in = fopen(argv[1], "r");
-    ASSERT(ASM_in != nullptr, Failed_To_Open_Input_File,{});
+    err = open_files(&files, argv);
+    VERIFY(err);
 
     commands_struct commands = {};
-    err = record_commands_to_buffer(ASM_in, &commands);
+    err = record_commands_to_buffer(files.ASM_in, &commands);
     VERIFY(err);
 
     code_struct code = {};
-    err = create_code_array(&commands, &code);
+    err = create_code_array(&code, &commands);
     VERIFY(err);
 
-    FILE* ASM_out = fopen("ASM_out.bin", "wb");
-    ASSERT(ASM_out != nullptr, Failed_To_Create_Output_File, (fclose(ASM_in), free(code.pointer)));
-
-    err = write_code_to_file(&code, ASM_out);
+    err = write_code_to_file(&code, files.ASM_out);
     VERIFY(err);
 
-    fclose(logfile);
+    close_files(&files);
 
     printf("---\nDone successfully\n---");
     return 0;
