@@ -1,19 +1,16 @@
-//#ifndef _CMD_H
-//#define _CMD_H
-
-DEF_CMD(hlt,  NO_ARGS, {})
+DEF_CMD(hlt, NO_ARGS, {})
 
 DEF_CMD(push, ARGS,
 {
 
 })
 
-DEF_CMD(pop,  ARGS,
+DEF_CMD(pop, ARGS,
 {
 
 })
 
-DEF_CMD(add,  NO_ARGS,
+DEF_CMD(add, NO_ARGS,
 {
     CHECK_STACK(CMD_ADD);
     stackPop(stk, &num1);
@@ -22,7 +19,7 @@ DEF_CMD(add,  NO_ARGS,
     ip++;
 })
 
-DEF_CMD(sub,  NO_ARGS,
+DEF_CMD(sub, NO_ARGS,
 {
     CHECK_STACK(CMD_SUB);
     stackPop(stk, &num1);
@@ -31,7 +28,7 @@ DEF_CMD(sub,  NO_ARGS,
     ip++;
 })
 
-DEF_CMD(mul,  NO_ARGS,
+DEF_CMD(mul, NO_ARGS,
 {
     CHECK_STACK(CMD_MUL);
     stackPop(stk, &num1);
@@ -40,7 +37,7 @@ DEF_CMD(mul,  NO_ARGS,
     ip++;
 })
 
-DEF_CMD(div,  NO_ARGS,
+DEF_CMD(div, NO_ARGS,
 {
     CHECK_STACK(CMD_DIV);
     stackPop(stk, &num1);
@@ -49,13 +46,13 @@ DEF_CMD(div,  NO_ARGS,
     ip++;
 })
 
-DEF_CMD(out,  NO_ARGS,
+DEF_CMD(out, NO_ARGS,
 {
     printf("\nStack top element: [%d]\n\n", *stk->top_elem);
     ip++;
 })
 
-DEF_CMD(in,   NO_ARGS,
+DEF_CMD(in, NO_ARGS,
 {
     err = scanf("%d", &num1);
     if (!err)
@@ -77,5 +74,3 @@ DEF_CMD(dump, NO_ARGS,
     }
     ip++;
 })
-
-//#endif

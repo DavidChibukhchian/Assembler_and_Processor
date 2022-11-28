@@ -1,6 +1,10 @@
 #ifndef _BUFFER_H_
 #define _BUFFER_H_
 
+#include <stdio.h>
+#include <sys\stat.h>
+#include <malloc.h>
+
 size_t get_filesize(FILE* filename);
 
 char* read_file_to_buffer(FILE* filename, size_t filesize);

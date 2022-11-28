@@ -1,9 +1,21 @@
 #ifndef _ASM_H_
 #define _ASM_H_
 
+#include <stdio.h>
+#include <string.h>
+#include <malloc.h>
+
+#include "Buffer.h"
 #include "Logger.h"
 
 //----------------------------------------------------------------------------------------------------------------------
+
+struct files_struct
+{
+    FILE* logfile;
+    FILE* ASM_in;
+    FILE* ASM_out;
+};
 
 struct commands_struct
 {
@@ -11,8 +23,6 @@ struct commands_struct
     char* buffer;
     size_t number_of_commands;
 };
-
-int record_commands_to_buffer(FILE* ASM_in, commands_struct* commands);
 
 struct code_struct
 {
@@ -22,14 +32,24 @@ struct code_struct
     int err;
 };
 
-int create_code_array(commands_struct* commands, code_struct* code);
+//----------------------------------------------------------------------------------------------------------------------
+
+void close_files(files_struct* files);
+
+void open_logfile(files_struct* files);
+
+int open_files(files_struct* files, char** argv);
+
+int record_commands_to_buffer(FILE* ASM_in, commands_struct* commands);
+
+int create_code_array(code_struct* code, commands_struct* commands);
 
 int write_code_to_file(code_struct* code, FILE* ASM_out);
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define CHECK_LOGFILE(logfile)                               \
-if (logfile == nullptr)                                      \
+#define CHECK_LOGFILE(files)                                 \
+if (files.logfile == nullptr)                                \
 {                                                            \
     printf("---\nERROR: Failed to create logfile\n---");     \
     return Failed_To_Create_Logfile;                         \
@@ -41,20 +61,19 @@ if (logfile == nullptr)                                      \
 if (err)                                                     \
 {                                                            \
     dump_to_console(err);                                    \
-    dump_to_logfile(logfile, err);                           \
-    fclose(logfile);                                         \
+    dump_to_logfile(files.logfile, err);                     \
+    fclose(files.logfile);                                   \
     return err;                                              \
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define ASSERT(condition, err, code)                         \
+#define ASSERT(condition, err)                               \
 if (!(condition))                                            \
 {                                                            \
-    code;                                                    \
     dump_to_console(err);                                    \
-    dump_to_logfile(logfile, err);                           \
-    fclose(logfile);                                         \
+    dump_to_logfile(files.logfile, err);                     \
+    fclose(files.logfile);                                   \
     return err;                                              \
 }
 
