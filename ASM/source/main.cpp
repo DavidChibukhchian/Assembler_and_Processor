@@ -1,31 +1,7 @@
 #include "ASM.h"
-#include <string.h>
-#include <cstring>
 
 int main(int argc, char* argv[])
 {
-
-
-    char str[] ="push [rax+10] 4";
-    char* pointer[10] = {nullptr};
-
-    pointer[0] = strtok(str, " ");
-
-    size_t i = 0;
-
-    while (pointer[i] != nullptr)
-    {
-        pointer[i + 1] = strtok(nullptr, " ");
-        i++;
-    }
-
-    for (size_t j = 0; j < i; j++)
-    {
-//        printf("%s\n", pointer[j]);
-    }
-
-
-
     files_struct files = {};
     open_logfile(&files);
     CHECK_LOGFILE(files);
@@ -50,6 +26,5 @@ int main(int argc, char* argv[])
 
     close_files(&files);
 
-    printf("---\nDone successfully\n---");
     return 0;
 }
