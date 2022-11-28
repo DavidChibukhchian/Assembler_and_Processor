@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <malloc.h>
-#include <sys\stat.h>
-
 #include "CPU.h"
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -15,19 +11,38 @@ static const char  VERSION = 7;
 
 //----------------------------------------------------------------------------------------------------------------------
 
+#define DEF_CMD(name, arg_type, code) \
+CMD_##name,
+
 enum Commands
 {
-    CMD_HLT  = 0,
-    CMD_PUSH = 1,
-    CMD_POP  = 2,
-    CMD_ADD  = 3,
-    CMD_SUB  = 4,
-    CMD_MUL  = 5,
-    CMD_DIV  = 6,
-    CMD_OUT  = 7,
-    CMD_IN   = 8,
-    CMD_DUMP = 9
+#include "cmd.h"
 };
+
+#undef DEF_CMD
+
+
+enum ARG_CG
+{
+    NO_ARGS  = 0,
+    ARG_NUM  = 1,
+    ARG_REGG = 2,
+    ARG_RAM  = 3
+};
+
+//enum Commands
+//{
+//    CMD_HLT  = 0,
+//    CMD_PUSH = 1,
+//    CMD_POP  = 2,
+//    CMD_ADD  = 3,
+//    CMD_SUB  = 4,
+//    CMD_MUL  = 5,
+//    CMD_DIV  = 6,
+//    CMD_OUT  = 7,
+//    CMD_IN   = 8,
+//    CMD_DUMP = 9
+//};
 
 enum ARG_type
 {
@@ -128,11 +143,11 @@ void fprintf_commands(FILE* dump_file, char* code, int size)
 
 void fprintf_line(FILE* dump_file, size_t ip)
 {
-    for (size_t i = 0; i < ip - 1; i++)
+    for (size_t i = 0; i < ip; i++)
     {
         fprintf(dump_file, "~~~");
     }
-    fprintf(dump_file, "^ ip = %zu\n", --ip);
+    fprintf(dump_file, "^ ip = %zu\n", ip);
 }
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -220,18 +235,36 @@ char* read_code_to_buffer(FILE* ASM_out, int* err)
     return code;
 }
 
+
+void func(char* stroka)
+{
+    stroka[7] = 'a';
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 
-int run_code(char* code, Stack* stk, int* reg)
+int run_code(char* code, Stack* stk, int* REG)
 {
-    size_t ip = 0;
-    int num1, num2 = 0;
-
     int err = 0;
+    size_t ip = 0;
+
+    int num1 = 0;
+    int num2 = 0;
+
     while (code[ip] != CMD_HLT)
     {
         switch(code[ip])
         {
+
+
+#define DEF_CMD(name, arg_type, code)  \
+case CMD_##name:                       \
+    code;                              \
+                                       \
+    break;
+#include "cmd.h"
+
+
             case CMD_PUSH:
                 ip++;
                 switch(code[ip])
@@ -244,7 +277,7 @@ int run_code(char* code, Stack* stk, int* reg)
 
                     case ARG_REG:
                         ip++;
-                        stackPush(stk, *(reg + code[ip]));
+                        stackPush(stk, *(REG + code[ip]));
                         ip++;
                         break;
 
@@ -252,80 +285,57 @@ int run_code(char* code, Stack* stk, int* reg)
                         ip++;
                         break;
                 }
+
                 break;
 
             case CMD_POP:
-                err = check_stack(stk, CMD_POP);
-                if (err)
-                {
-                    free(code);
-                    return err;
-                }
-
+                CHECK_STACK(CMD_POP);
                 ip += 2;
-                stackPop(stk, reg + code[ip]);
+                stackPop(stk, REG + code[ip]);
                 ip++;
 
                 break;
 
             case CMD_ADD:
-                err = check_stack(stk, CMD_ADD);
-                if (err)
-                {
-                    free(code);
-                    return err;
-                }
-
+                CHECK_STACK(CMD_ADD);
                 stackPop(stk, &num1);
                 stackPop(stk, &num2);
                 stackPush(stk, num1 + num2);
                 ip++;
+
                 break;
 
             case CMD_SUB:
-                err = check_stack(stk, CMD_SUB);
-                if (err)
-                {
-                    free(code);
-                    return err;
-                }
-
+                CHECK_STACK(CMD_SUB);
                 stackPop(stk, &num1);
                 stackPop(stk, &num2);
                 stackPush(stk, num2 - num1);
                 ip++;
+
                 break;
 
             case CMD_MUL:
-                err = check_stack(stk, CMD_MUL);
-                if (err)
-                {
-                    free(code);
-                    return err;
-                }
+                CHECK_STACK(CMD_MUL);
                 stackPop(stk, &num1);
                 stackPop(stk, &num2);
                 stackPush(stk, num1 * num2);
                 ip++;
+
                 break;
 
             case CMD_DIV:
-                err = check_stack(stk, CMD_DIV);
-                if (err)
-                {
-                    free(code);
-                    return err;
-                }
-
+                CHECK_STACK(CMD_DIV);
                 stackPop(stk, &num1);
                 stackPop(stk, &num2);
                 stackPush(stk, num2 / num1);
                 ip++;
+
                 break;
 
             case CMD_OUT:
                 printf("\nStack top element: [%d]\n\n", *stk->top_elem);
                 ip++;
+
                 break;
 
             case CMD_IN:
@@ -337,19 +347,21 @@ int run_code(char* code, Stack* stk, int* reg)
                 }
                 stackPush(stk, num1);
                 ip++;
+
                 break;
 
             case CMD_HLT:
                 break;
 
             case CMD_DUMP:
-                ip++;
                 err = Dump(code, stk, ip);
                 if (err)
                 {
                     free(code);
                     return err;
                 }
+                ip++;
+
                 break;
 
             default:
@@ -357,8 +369,8 @@ int run_code(char* code, Stack* stk, int* reg)
                 break;
         }
     }
-    free(code);
 
+    free(code);
     return Done_Successfully;
 }
 

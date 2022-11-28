@@ -1,12 +1,17 @@
-#include "Stack.h"
 #include "CPU.h"
 
-#define NUMBER_OF_REGISTERS 5
+static const size_t NUMBER_OF_REGISTERS = 5;
+//static const size_t SIZE_OF_RAM = 1024;
 
 int main(int argc, char* argv[])
 {
     int err = 0;
-    int reg[NUMBER_OF_REGISTERS] = {0};
+
+    int REG[NUMBER_OF_REGISTERS] = {0};
+//    int RAM[SIZE_OF_RAM] = {0};
+
+//    char str[] = "1234   ";
+//    sscanf(str, "%s%n", );
 
     FILE* logfile = fopen("CPU_logfile.txt",  "w");
     CHECK_LOGFILE(logfile);
@@ -25,10 +30,10 @@ int main(int argc, char* argv[])
     Stack stk = {};
     stackCtor(&stk);
 
-    err = run_code(code, &stk, reg);
+    err = run_code(code, &stk, REG);
     VERIFY(err);
 
-    printf("%d %d %d %d", reg[1], reg[2], reg[3], reg[4]);
+    printf("RAX: %d\n", REG[1]); printf("RBX: %d\n", REG[2]); printf("RCX: %d\n", REG[3]); printf("RDX: %d\n", REG[4]);
 
     stackDisplay(&stk);
     stackDtor(&stk);
