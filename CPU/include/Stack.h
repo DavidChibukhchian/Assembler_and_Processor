@@ -2,6 +2,7 @@
 #define CPU_STACK_H
 
 #include <stdio.h>
+#include <malloc.h>
 
 typedef int elem_t;
 typedef long long int canary_t;
