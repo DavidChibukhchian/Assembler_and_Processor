@@ -23,7 +23,6 @@ int main(int argc, char* argv[])
     VERIFY(err);
 
     close_files(&files);
-
-    printf("---\nDone successfully\n---");
+    
     return 0;
 }
