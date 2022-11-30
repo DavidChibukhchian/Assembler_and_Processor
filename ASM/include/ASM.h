@@ -84,7 +84,6 @@ if (code->err)                                               \
 {                                                            \
     if (code->pointer != nullptr)                            \
         free(code->pointer);                                 \
-                                                             \
     free_buffer(commands);                                   \
     return code->err;                                        \
 }

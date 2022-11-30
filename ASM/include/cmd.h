@@ -1,11 +1,11 @@
 DEF_CMD(hlt, NO_ARGS, {})
 
-DEF_CMD(push, ARGS,
+DEF_CMD(push, ONE_ARG,
 {
 
 })
 
-DEF_CMD(pop, ARGS,
+DEF_CMD(pop, ONE_ARG,
 {
 
 })
