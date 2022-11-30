@@ -481,8 +481,6 @@ int create_code_array(code_struct* code, commands_struct* commands)
     codeShrinkToFit(code);
     VERIFY_CODE_ERR;
 
-    printf("---\nSIZE = %zu\n(without signature and version)\n", code->offset - SIZE_OF_SIGNATURE - SIZE_OF_VERSION);
-
     free_buffer(commands);
 
     return Done_Successfully;
