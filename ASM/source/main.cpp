@@ -8,9 +8,7 @@ int main(int argc, char* argv[])
 
     ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments);
 
-    int err = 0;
-
-    err = open_files(&files, argv);
+    int err = open_files(&files, argv);
     VERIFY(err);
 
     commands_struct commands = {};
@@ -26,5 +24,6 @@ int main(int argc, char* argv[])
 
     close_files(&files);
 
+    printf("---\nDone successfully\n---");
     return 0;
 }
