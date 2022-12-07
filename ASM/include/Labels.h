@@ -3,10 +3,11 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#include <malloc.h>
 #include <ctype.h>
 #include <string.h>
+#include <malloc.h>
 #include "Logger.h"
+#include "ASM.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -32,10 +33,12 @@ void labels_Push(labels_struct* labels, char* label_name, size_t value);
 
 void labels_Check_Label(labels_struct* labels, char* label_name, size_t value, size_t length_of_label_name);
 
-int labels_Check_Jump(labels_struct* labels, char* label_name);
+void labels_Check_Jump(labels_struct* labels, char* label_name);
+
+void labels_Set(labels_struct* labels, void* jumps, char* code_pointer);
 
 void labels_Dtor(labels_struct* labels);
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#endif
+#endif // _LABELS_H

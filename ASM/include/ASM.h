@@ -3,12 +3,8 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
-#include "Labels.h"
 #include "Buffer.h"
-#include "Logger.h"
+#include "Labels.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -26,20 +22,25 @@ struct commands_struct
     size_t number_of_commands;
 };
 
-struct jumps_struct
-{
-    int* addresses;
-    size_t number_of_addresses;
-    size_t number_of_free_addresses;
-};
-
 struct code_struct
 {
     char* pointer;
     size_t size;
     int offset;
-    bool HLT_was_set;
-    jumps_struct jumps;
+    int err;
+};
+
+struct jump_struct
+{
+    int address;
+    char* label_name;
+};
+
+struct jumps_struct
+{
+    jump_struct* jump;
+    size_t number_of_addresses;
+    size_t number_of_free_addresses;
     int err;
 };
 
@@ -51,29 +52,33 @@ void open_logfile(files_struct* files);
 
 int open_files(files_struct* files, char** argv);
 
-int record_commands_to_buffer(FILE* ASM_in, commands_struct* commands);
+int record_commands_to_buffer(files_struct* files, commands_struct* commands);
 
 int create_code_array(code_struct* code, commands_struct* commands);
 
-int write_code_to_file(code_struct* code, FILE* ASM_out);
+int write_code_to_file(code_struct* code, files_struct* files);
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define CHECK_LOGFILE(files)                                 \
-if (files.logfile == nullptr)                                \
+#define OPEN_LOGFILE(files)                                  \
+                                                             \
+FILE* logfile = fopen("ASM_logfile.txt",  "w");              \
+if (logfile == nullptr)                                      \
 {                                                            \
     printf("---\nERROR: Failed to create logfile\n---");     \
     return Failed_To_Create_Logfile;                         \
-}
+}                                                            \
+files.logfile = logfile;
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define VERIFY(err)                                          \
+#define VERIFY_err                                           \
+                                                             \
 if (err)                                                     \
 {                                                            \
     dump_to_console(err);                                    \
     dump_to_logfile(files.logfile, err);                     \
-    fclose(files.logfile);                                   \
+    close_files(&files);                                     \
                                                              \
     return err;                                              \
 }
@@ -81,6 +86,7 @@ if (err)                                                     \
 //----------------------------------------------------------------------------------------------------------------------
 
 #define ASSERT(condition, err)                               \
+                                                             \
 if (!(condition))                                            \
 {                                                            \
     dump_to_console(err);                                    \
@@ -92,28 +98,19 @@ if (!(condition))                                            \
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define VERIFY_LABELS_ERR                                    \
-if (labels.err)                                              \
+#define VERIFY(err)                                          \
+                                                             \
+if (err)                                                     \
 {                                                            \
-    code_Dtor(code);                                         \
-    labels_Dtor(&labels);                                    \
     free_buffer(commands);                                   \
                                                              \
-    return labels.err;                                       \
+    code_Dtor(code);                                         \
+    labels_Dtor(labels);                                     \
+    jumps_Dtor(jumps);                                       \
+                                                             \
+    return err;                                              \
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define VERIFY_CODE_ERR                                      \
-if (code->err)                                               \
-{                                                            \
-    code_Dtor(code);                                         \
-    labels_Dtor(&labels);                                    \
-    free_buffer(commands);                                   \
-                                                             \
-    return code->err;                                        \
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-
-#endif
+#endif // _ASM_H_

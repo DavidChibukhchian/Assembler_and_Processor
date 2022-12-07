@@ -21,4 +21,4 @@ char** split_buffer(char* buffer, size_t number_of_lines, size_t filesize);
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#endif
+#endif // _BUFFER_H_
