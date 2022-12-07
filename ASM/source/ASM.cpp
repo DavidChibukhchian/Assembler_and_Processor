@@ -56,11 +56,11 @@ static void parse_command(char* command, char** cmd, char** argument, size_t* le
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void reset_variables(unsigned char* arg_mask, int* value, char* reg)
+static void reset_variables(char* reg, int* value, unsigned char* arg_mask)
 {
+    *reg = 0;
+    *value = 0;
     *arg_mask = 0;
-    *value    = 0;
-    *reg      = 0;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -525,7 +525,7 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
         else if (!strcmp(cmd, #name))                                                                                  \
         {                                                                                                              \
             cmd_code = CMD_##name;                                                                                     \
-            reset_variables(&arg_mask, &value, &reg);                                                                  \
+            reset_variables(&reg, &value, &arg_mask);                                                                  \
                                                                                                                        \
             code->err = check_number_of_arguments(argument, arg_type);                                                 \
             VERIFY(code->err);                                                                                         \
