@@ -17,12 +17,13 @@ int main(int argc, char* argv[])
 
     code_struct code = {};
     err = create_code_array(&code, &commands);
-    VERIFY(err);
-
+    VERIFY(err)
+    printf("%d", code.jumps.addresses[0]);
     err = write_code_to_file(&code, files.ASM_out);
     VERIFY(err);
 
     close_files(&files);
-    
+
+    printf("---\nDone successfully\n---");
     return 0;
 }

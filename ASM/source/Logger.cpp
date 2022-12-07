@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "Logger.h"
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -25,9 +24,24 @@ const char* error_message[] = { "Done Successfully",                           /
 
                                 "Failed to create array of code",              // 16
                                 "Failed to resize array of code",              // 17
-                                "Invalid syntax",                              // 18
-                                "Nonexistent register",                        // 19
-                                "Failed to create output file" };              // 20
+
+                                "Syntax error: incorrect command",             // 18
+                                "Syntax error: incorrect argument",            //19
+                                "Syntax error: too few arguments to such command", // 20
+                                "Syntax error: too many arguments to such command", // 21
+
+                                "Syntax error: invalid label name",           // 22
+                                "Syntax error: too many labels in a row",     // 23
+                                "Syntax error: incorrect jump command",       // 24
+                                "This label already exists",                  // 25
+                                "Jump to nonexistent label",                  // 26
+
+                                "Nonexistent register",                       // 27
+                                "Failed to create output file",               // 28
+                                "Failed to push bytes to code",               // 29
+                                "Failed to create array of labels",           // 30
+                                "Failed to create array of jump addresses",   // 31
+                                "Failed to resize array of jump addresses" }; // 32
 
 //----------------------------------------------------------------------------------------------------------------------
 

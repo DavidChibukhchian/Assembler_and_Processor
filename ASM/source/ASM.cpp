@@ -1,23 +1,60 @@
 #include "ASM.h"
 
+//----------------------------------------------------------------------------------------------------------------------
+
+#define here printf("\nfunc: %s | line: %d)\n", __func__, __LINE__);
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static const char  VERSION = 7;
+static const int SIGNATURE = 0x123ABCD;
+
+static const size_t NUMBER_OF_REGISTERS = 4;
+
+//----------------------------------------------------------------------------------------------------------------------
+
 static const unsigned char ARG_NUM = 1 << 7;
 static const unsigned char ARG_REG = 1 << 6;
 static const unsigned char ARG_RAM = 1 << 5;
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static const float MULTIPLIER = 1.5;
-static const size_t BUFF_SIZE = 35;
-static const int CONTINUE = 100;
-
-//----------------------------------------------------------------------------------------------------------------------
-
-static const int SIGNATURE = 0x123ABCD;
-static const char  VERSION = 7;
-static const size_t NUMBER_OF_REGISTERS = 4;
+static const size_t MULTIPLIER = 2;
+static const int next_case = 1000;
+static const size_t START_NUMBER_OF_JUMP_ADDRESSES = 3;
 
 static const size_t SIZE_OF_SIGNATURE = sizeof(int);
 static const size_t SIZE_OF_VERSION   = sizeof(char);
+
+//----------------------------------------------------------------------------------------------------------------------
+
+#define DEF_CMD(name, arg_type, CPU_instructions) \
+CMD_##name,
+
+enum Commands
+{
+#include "cmd.h"
+};
+
+#undef DEF_CMD
+
+//----------------------------------------------------------------------------------------------------------------------
+
+enum ARG_type
+{
+    NO_ARGS = 0,
+    ONE_ARG = 1,
+    LABEL   = 2
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static void reset_variables(unsigned char* arg_mask, int* value, char* number_of_register)
+{
+    *arg_mask = 0;
+    *value    = 0;
+    *number_of_register = 0;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -60,51 +97,27 @@ int open_files(files_struct* files, char** argv)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define DEF_CMD(name, arg_type, cpu) \
-CMD_##name,
-
-enum Commands
-{
-    #include "cmd.h"
-};
-
-#undef DEF_CMD
-
-//----------------------------------------------------------------------------------------------------------------------
-
-enum ARG_type
-{
-    NO_ARGS = 0,
-    ONE_ARG = 1
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-
-static void codeShrinkToFit(code_struct* code)
+static void code_Shrink_To_Fit(code_struct* code)
 {
     char* new_pointer = (char*)realloc (code->pointer, code->offset);
     if (new_pointer == nullptr)
     {
-        free(code->pointer);
-        code->err = Failed_To_Create_Array_Of_Code;
+        code->err = Failed_To_Resize_Array_Of_Code;
+        return;
     }
+
+    code->pointer = new_pointer;
+
+    // Возвращается  указатель на переразмещенный  блок памяти.
+    // Если нет подходящей памяти, возвращается NULL (но память по ptr не освобождается).
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void codeExpand(code_struct* code)
+static void code_Expand(code_struct* code)
 {
-    char* new_pointer = nullptr;
-    if (code->size > 1)
-    {
-        new_pointer =(char*)realloc (code->pointer, code->size * MULTIPLIER);
-        code->size *= MULTIPLIER;
-    }
-    else
-    {
-        new_pointer = (char*)realloc (code->pointer, code->size + sizeof(int));
-        code->size += sizeof(int);
-    }
+    char* new_pointer = (char*)realloc (code->pointer, code->size * MULTIPLIER);
+    code->size *= MULTIPLIER;
 
     if (new_pointer == nullptr)
     {
@@ -112,43 +125,34 @@ static void codeExpand(code_struct* code)
         return;
     }
 
-    if (code->pointer != new_pointer)
-        free(code->pointer);
-
     code->pointer = new_pointer;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void codePush_Char(code_struct* code, char value)
+static void code_Push_Char(code_struct* code, char value)
 {
     if (code->offset == code->size)
     {
-        codeExpand(code);
+        code_Expand(code);
         if (code->err)
-        {
-            free(code->pointer);
             return;
-        }
     }
 
-    code->pointer[code->offset] = value;
+    *(code->pointer + code->offset) = value;
 
     code->offset += sizeof(char);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void codePush_Int(code_struct* code, int value)
+static void code_Push_Int(code_struct* code, int value)
 {
     if ((code->size - code->offset) < sizeof(int))
     {
-        codeExpand(code);
+        code_Expand(code);
         if (code->err)
-        {
-            free(code->pointer);
             return;
-        }
     }
 
     int* ptr = (int*)(code->pointer + code->offset);
@@ -163,13 +167,12 @@ static int check_number_of_arguments(char* argument, ARG_type arg_type)
 {
     if ((arg_type == NO_ARGS) && (argument != nullptr))
     {
-        return Invalid_Syntax;
+        here
+        return Too_Many_Arguments_To_Such_Command;
     }
 
-    if ((arg_type == ONE_ARG) && (argument == nullptr))
-    {
-        return Invalid_Syntax;
-    }
+    if (((arg_type == ONE_ARG) || (arg_type == LABEL)) && (argument == nullptr))
+        return Too_Few_Arguments_To_Such_Command;
 
     return Done_Successfully;
 }
@@ -195,7 +198,7 @@ static int check_square_brackets(char* argument, size_t length)
 
     if ((left__square_bracket != right_square_bracket) || (left__square_bracket > 1))
     {
-        return Invalid_Syntax;
+        return Incorrect_Command;
     }
 
     return Done_Successfully;
@@ -215,15 +218,15 @@ static int case_Number(char* argument, unsigned char* arg_mask, int* value)
             return Done_Successfully;
         }
         else
-            return Invalid_Syntax;
+            return Incorrect_Argument;
     }
 
-    return CONTINUE;
+    return next_case;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int case_Register(char* argument, unsigned char* arg_mask, size_t* number_of_register, size_t length)
+static int case_Register(char* argument, unsigned char* arg_mask, char* number_of_register, size_t length)
 {
     if ((length == 3) && (argument[0] == 'r') && (argument[2] == 'x'))
     {
@@ -237,12 +240,12 @@ static int case_Register(char* argument, unsigned char* arg_mask, size_t* number
             return Nonexistent_Register;
     }
 
-    return CONTINUE;
+    return next_case;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int case_RAM(char* argument, unsigned char* arg_mask, size_t* number_of_register, int* value, size_t length)
+static int case_RAM(char* argument, unsigned char* arg_mask, char* number_of_register, int* value, size_t length)
 {
     size_t length_of_number = 0;
 
@@ -255,6 +258,8 @@ static int case_RAM(char* argument, unsigned char* arg_mask, size_t* number_of_r
             if ((argument[2] - 'a') < NUMBER_OF_REGISTERS)
             {
                 *arg_mask = (*arg_mask) | ARG_REG;
+                *number_of_register = argument[2] - 'a' + 1;
+
                 if ((argument[4] == '+') && (sscanf((argument + 5), "%d%n", value, &length_of_number)))
                 {
                     if (*(argument + 5 + length_of_number) == ']')
@@ -281,73 +286,140 @@ static int case_RAM(char* argument, unsigned char* arg_mask, size_t* number_of_r
         }
     }
 
-    return CONTINUE;
+    return next_case;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int create_arg_mask(char* argument, unsigned char* arg_mask, size_t* number_of_register, int* value)
+static int create_arg_mask(char* argument, unsigned char* arg_mask, char* number_of_register, int* value)
 {
     size_t length = strlen(argument);
 
     if (check_square_brackets(argument, length))
-        return Invalid_Syntax;
+        return Incorrect_Command;
 
     int res = 0;
 
     res = case_Number(argument, arg_mask, value);
-    if (res != CONTINUE)
+    if (res != next_case)
         return res;
 
    res = case_Register(argument, arg_mask, number_of_register, length);
-    if (res != CONTINUE)
-        return res;
+   if (res != next_case)
+       return res;
 
    res = case_RAM(argument, arg_mask, number_of_register, value, length);
-    if (res != CONTINUE)
-        return res;
+   if (res != next_case)
+       return res;
 
-    return Invalid_Syntax;
+   return Incorrect_Command;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void codePush_Command(code_struct* code, unsigned char cmd_code, int reg, int value)
+static void code_Push_Command(code_struct* code, unsigned char cmd_code, int value, char reg)
 {
-    codePush_Char(code, cmd_code);
+    code_Push_Char(code, cmd_code);
+    if (code->err)
+        return;
 
     if (cmd_code & ARG_REG)
     {
-        codePush_Char(code, reg);
+        code_Push_Char(code, reg);
+        if (code->err)
+            return;
     }
 
     if (cmd_code & ARG_NUM)
     {
-        codePush_Int(code, value);
+        code_Push_Int(code, value);
     }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void codePush_Signature(code_struct* code)
+static void code_Push_Signature(code_struct* code)
 {
-    codePush_Int(code, SIGNATURE);
+    code_Push_Int(code, SIGNATURE);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void codePush_Version(code_struct* code)
+static void code_Push_Version(code_struct* code)
 {
-    codePush_Char(code, VERSION);
+    code_Push_Char(code, VERSION);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void codeCtor(code_struct* code, size_t number_of_commands)
+static void jumps_Ctor(code_struct* code)
+{
+    code->jumps.addresses = (int*)calloc (START_NUMBER_OF_JUMP_ADDRESSES, sizeof(int));
+    if (code->jumps.addresses == nullptr)
+    {
+        code->err = Failed_To_Create_Array_Of_Jump_Addresses;
+        return;
+    }
+
+    code->jumps.number_of_addresses = 0;
+    code->jumps.number_of_free_addresses = START_NUMBER_OF_JUMP_ADDRESSES;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static void jumps_Expand(code_struct* code)
+{
+    size_t new_size = code->jumps.number_of_addresses * MULTIPLIER;
+
+    int* new_pointer = (int*)realloc (code->jumps.addresses, new_size * sizeof(int));
+    if (new_pointer == nullptr)
+    {
+        code->err = Failed_To_Resize_Array_Of_Jump_Addresses;
+        return;
+    }
+    code->jumps.addresses = new_pointer;
+
+    code->jumps.number_of_free_addresses = code->jumps.number_of_addresses * (MULTIPLIER - 1);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static void jumps_Put_Address(code_struct* code, int value)
+{
+    if (code->jumps.number_of_free_addresses == 0)
+    {
+        jumps_Expand(code);
+        if (code->err)
+            return;
+    }
+
+    size_t idx = code->jumps.number_of_addresses;
+    code->jumps.addresses[idx] = value;
+
+    code->jumps.number_of_addresses++;
+    code->jumps.number_of_free_addresses--;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static void jumps_Dtor(code_struct* code)
+{
+    if (code->jumps.addresses != nullptr)
+    {
+        free(code->jumps.addresses);
+        code->jumps.addresses = nullptr;
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static void code_Ctor(code_struct* code, size_t number_of_commands)
 {
     code->err    = 0;
     code->offset = 0;
-    code->size   = SIZE_OF_SIGNATURE + SIZE_OF_VERSION + number_of_commands;
+    code->HLT_was_set = false;
+    code->size = SIZE_OF_SIGNATURE + SIZE_OF_VERSION + number_of_commands;
+    code->jumps.addresses = nullptr;
 
     code->pointer = (char*)calloc (code->size, sizeof(char));
     if (code->pointer == nullptr)
@@ -356,8 +428,27 @@ static void codeCtor(code_struct* code, size_t number_of_commands)
         return;
     }
 
-    codePush_Signature(code);
-    codePush_Version(code);
+    jumps_Ctor(code);
+    if (code->err)
+        return;
+
+    code_Push_Signature(code);
+    if (code->err)
+        return;
+
+    code_Push_Version(code);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static void code_Dtor(code_struct* code)
+{
+    if (code->pointer != nullptr)
+    {
+        free(code->pointer);
+        code->pointer = nullptr;
+    }
+    jumps_Dtor(code);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -388,7 +479,7 @@ int record_commands_to_buffer(FILE* ASM_in, commands_struct* commands)
     commands->buffer = buffer;
 
     commands->number_of_commands = count_lines(buffer);
-   
+
     char** array_of_commands = split_buffer(buffer, commands->number_of_commands, filesize);
     if (array_of_commands == nullptr)
     {
@@ -407,81 +498,111 @@ int record_commands_to_buffer(FILE* ASM_in, commands_struct* commands)
 
 int create_code_array(code_struct* code, commands_struct* commands)
 {
+    code_Ctor(code, commands->number_of_commands);
+    if (code->err)
+    {
+        code_Dtor(code);
+        free_buffer(commands);
+        return code->err;
+    }
+
+    labels_struct labels = {};
+    labels_Ctor(&labels);
+    VERIFY_LABELS_ERR;
+
     unsigned char cmd_code = 0;
     unsigned char arg_mask = 0;
 
-    size_t i = 0;
-    bool HLT_was_set = false;
-
-    codeCtor(code, commands->number_of_commands);
-    VERIFY_CODE_ERR;
-
-    char* cmd = nullptr;
-    char* argument = nullptr;
-
-    size_t number_of_register = 0;
     int value = 0;
+    char number_of_register = 0;
 
-    for (; i < commands->number_of_commands; i++)
+    char* cmd      = nullptr;
+    char* argument = nullptr;
+    size_t length_of_cmd = 0;
+
+    for (size_t i = 0; i < commands->number_of_commands; i++)
     {
-        cmd = strtok(commands->array_of_commands[i], " ");
+        cmd = strtok(commands->array_of_commands[i], " ");    // function
+        length_of_cmd = strlen(cmd);
         argument = strtok(nullptr, " ");
+
         if (strtok(nullptr, " ") != nullptr)
         {
-            code->err = Invalid_Syntax;
+            code->err = Too_Many_Arguments_To_Such_Command;
             VERIFY_CODE_ERR;
         }
 
         if (false) {}
 
         //------------------------------------------------------------------
-        #define DEF_CMD(name, arg_type, cpu)                                                                            \
-        else if (strcmp(cmd, #name) == 0)                                                                               \
-        {                                                                                                               \
-            code->err = check_number_of_arguments(argument, arg_type);                                                  \
-            VERIFY_CODE_ERR;                                                                                            \
-                                                                                                                        \
-            cmd_code = 0;                                                                                               \
-            arg_mask = 0;                                                                                               \
-                                                                                                                        \
-            if (arg_type == ONE_ARG)                                                                                    \
-            {                                                                                                           \
-                code->err = create_arg_mask(argument, &arg_mask, &number_of_register, &value);                          \
-                VERIFY_CODE_ERR;                                                                                        \
-                cmd_code = (CMD_##name) | arg_mask;                                                                     \
-            }                                                                                                           \
-                                                                                                                        \
-            codePush_Command(code, cmd_code, number_of_register, value);                                                \
-            VERIFY_CODE_ERR;                                                                                            \
-                                                                                                                        \
-            if (!strcmp("hlt", #name))                                                                                  \
-                HLT_was_set = true;                                                                                     \
+
+        #define DEF_CMD(name, arg_type, CPU_instructions)                                                              \
+        else if (!strcmp(cmd, #name))                                                                                  \
+        {                                                                                                              \
+            reset_variables(&arg_mask, &value, &number_of_register);                                                   \
+            cmd_code = CMD_##name;                                                                                     \
+                                                                                                                       \
+            code->err = check_number_of_arguments(argument, arg_type);                                                 \
+            VERIFY_CODE_ERR;                                                                                           \
+                                                                                                                       \
+            if (arg_type == ONE_ARG)                                                                                   \
+            {                                                                                                          \
+                code->err = create_arg_mask(argument, &arg_mask, &number_of_register, &value);                         \
+            }                                                                                                          \
+            else if (arg_type == LABEL)                                                                                \
+            {                                                                                                          \
+                code->err = labels_Check_Jump(&labels, argument);                                                      \
+                VERIFY_CODE_ERR;                                                                                       \
+                                                                                                                       \
+                arg_mask = ARG_NUM;                                                                                    \
+                jumps_Put_Address(code, code->offset + 1);                                                             \
+            }                                                                                                          \
+            VERIFY_CODE_ERR;                                                                                           \
+                                                                                                                       \
+            cmd_code = cmd_code | arg_mask;                                                                            \
+                                                                                                                       \
+            code_Push_Command(code, cmd_code, value, number_of_register);                                              \
+            VERIFY_CODE_ERR;                                                                                           \
+                                                                                                                       \
+            if (!strcmp("hlt", #name))                                                                                 \
+                code->HLT_was_set = true;                                                                              \
         }
 
         #include "cmd.h"
         #undef DEF_CMD
+
         //------------------------------------------------------------------
+
+        else if ((cmd[length_of_cmd - 1] == ':') && (argument == nullptr))
+        {
+            labels_Check_Label(&labels, cmd, code->offset + 1, length_of_cmd);
+            VERIFY_LABELS_ERR;
+
+            labels_Push(&labels, cmd, code->offset + 1);
+            VERIFY_LABELS_ERR;
+        }
 
         else
         {
-            free_buffer(commands);
-            if (code->pointer != nullptr)
-                free(code->pointer);
-            return Invalid_Syntax;
+            code->err = Incorrect_Command;
+            VERIFY_CODE_ERR;
         }
     }
-
-    if (!(HLT_was_set))
+    if (!(code->HLT_was_set))
     {
-        free_buffer(commands);
-        free(code->pointer);
-        return Missed_HLT_Command;
+        code->err = Missed_HLT_Command;
+        VERIFY_CODE_ERR;
     }
 
-    codeShrinkToFit(code);
+    code_Shrink_To_Fit(code);
     VERIFY_CODE_ERR;
 
+    labels_Put_Values(&labels, code->pointer);
+
+    printf("---\nSIZE = %d\n(without signature and version)\n", code->offset - SIZE_OF_SIGNATURE - SIZE_OF_VERSION);
+
     free_buffer(commands);
+    labels_Dtor(&labels);
 
     return Done_Successfully;
 }
@@ -496,11 +617,11 @@ int write_code_to_file(code_struct* code, FILE* ASM_out)
     if (written_bytes != code->offset)
     {
         fclose(ASM_out);
-        free(code->pointer);
+        code_Dtor(code);
         return Failed_To_Write_Code_To_File;
     }
 
-    free(code->pointer);
+    code_Dtor(code);
 
     return Done_Successfully;
 }
