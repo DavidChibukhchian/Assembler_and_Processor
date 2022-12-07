@@ -86,27 +86,28 @@ void labels_Check_Label(labels_struct* labels, char* label_name, size_t value, s
 
 //----------------------------------------------------------------------------------------------------------------------
 
-int labels_Check_Jump(labels_struct* labels, char* label_name)
+void labels_Check_Jump(labels_struct* labels, char* label_name)
 {
     if ((label_name[0] != ':') || (label_name[1] == '\0'))
-        return Incorrect_Jump_Command;
+    {
+        labels->err = Incorrect_Jump_Command;
+        return;
+    }
 
     label_name++;
     size_t length_of_label_name = strlen(label_name);
 
     if (incorrect_label_name(labels, label_name, length_of_label_name + 1))
-        return labels->err;
-
-    return Done_Successfully;
+        return;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
 static void labels_Expand(labels_struct* labels)
 {
-    size_t new_size = labels->number_of_labels * MULTIPLIER;
-    label_struct* new_pointer = (label_struct*)realloc (labels->label, new_size * sizeof(label_struct));
+    size_t new_size = MULTIPLIER * labels->number_of_labels * sizeof(label_struct);
 
+    label_struct* new_pointer = (label_struct*)realloc (labels->label, new_size);
     if (new_pointer == nullptr)
     {
         labels->err = Failed_To_Create_Array_Of_Labels;  //todo "resize"
@@ -139,27 +140,44 @@ void labels_Push(labels_struct* labels, char* label_name, size_t value)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void labels_Put_Values(labels_struct* labels, char* code_pointer)
+void labels_Set(labels_struct* labels, void* jumps_ptr, char* code_pointer)
 {
-//    int* ptr = (int*) (code->pointer + code->jumps.addresses[0]);
-//    *ptr = value;
+    jumps_struct* jumps = (jumps_struct*) jumps_ptr;
+    bool label_was_set = false;
 
-//    for (size_t i = 0; i < labels->number_of_labels; i++)
-//    {
-//        if ((strstr(labels->label[i].name, label_name) != nullptr) && (labels->label[i].name[length_of_label_name] == ':'))
-//        {
-//            return Done_Successfully;
-//        }
-//    }
+    for (size_t i = 0; i < jumps->number_of_addresses; i++)
+    {
+        for (size_t j = 0; j < labels->number_of_labels; j++)
+        {
+            if ((strstr(labels->label[j].name, jumps->jump[i].label_name) != nullptr))
+            {
+                size_t len = strlen(jumps->jump[i].label_name);
+                if (labels->label[j].name[len] == ':')
+                {
+                    *(code_pointer + jumps->jump[i].address) = labels->label[j].value;
+                    label_was_set = true;
+                    break;
+                }
+            }
+        }
+
+        if (label_was_set)
+        {
+            label_was_set = false;
+            continue;
+        }
+
+        jumps->err = Jump_To_Nonexistent_Label;
+        return;
+    }
 }
+
+//----------------------------------------------------------------------------------------------------------------------
 
 void labels_Dtor(labels_struct* labels)
 {
     if (labels->label != nullptr)
-    {
         free(labels->label);
-        labels->label = nullptr;
-    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
