@@ -1,10 +1,12 @@
 #ifndef _ASM_H_
 #define _ASM_H_
 
+//----------------------------------------------------------------------------------------------------------------------
+
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
-
+#include "Labels.h"
 #include "Buffer.h"
 #include "Logger.h"
 
@@ -24,11 +26,20 @@ struct commands_struct
     size_t number_of_commands;
 };
 
+struct jumps_struct
+{
+    int* addresses;
+    size_t number_of_addresses;
+    size_t number_of_free_addresses;
+};
+
 struct code_struct
 {
     char* pointer;
     size_t size;
-    size_t offset;
+    int offset;
+    bool HLT_was_set;
+    jumps_struct jumps;
     int err;
 };
 
@@ -63,6 +74,7 @@ if (err)                                                     \
     dump_to_console(err);                                    \
     dump_to_logfile(files.logfile, err);                     \
     fclose(files.logfile);                                   \
+                                                             \
     return err;                                              \
 }
 
@@ -74,7 +86,20 @@ if (!(condition))                                            \
     dump_to_console(err);                                    \
     dump_to_logfile(files.logfile, err);                     \
     fclose(files.logfile);                                   \
+                                                             \
     return err;                                              \
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+#define VERIFY_LABELS_ERR                                    \
+if (labels.err)                                              \
+{                                                            \
+    code_Dtor(code);                                         \
+    labels_Dtor(&labels);                                    \
+    free_buffer(commands);                                   \
+                                                             \
+    return labels.err;                                       \
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -82,9 +107,10 @@ if (!(condition))                                            \
 #define VERIFY_CODE_ERR                                      \
 if (code->err)                                               \
 {                                                            \
-    if (code->pointer != nullptr)                            \
-        free(code->pointer);                                 \
+    code_Dtor(code);                                         \
+    labels_Dtor(&labels);                                    \
     free_buffer(commands);                                   \
+                                                             \
     return code->err;                                        \
 }
 

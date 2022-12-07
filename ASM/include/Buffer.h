@@ -1,9 +1,13 @@
 #ifndef _BUFFER_H_
 #define _BUFFER_H_
 
+//----------------------------------------------------------------------------------------------------------------------
+
 #include <stdio.h>
 #include <sys\stat.h>
 #include <malloc.h>
+
+//----------------------------------------------------------------------------------------------------------------------
 
 size_t get_filesize(FILE* filename);
 
@@ -14,5 +18,7 @@ size_t count_lines(char* buffer);
 void change_delimiter(char* buffer, char old_delimiter, char new_delimiter);
 
 char** split_buffer(char* buffer, size_t number_of_lines, size_t filesize);
+
+//----------------------------------------------------------------------------------------------------------------------
 
 #endif
