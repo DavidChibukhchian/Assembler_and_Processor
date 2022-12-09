@@ -17,7 +17,6 @@ void labels_Ctor(labels_struct* labels)
     if (labels->label == nullptr)
     {
         labels->err = Failed_To_Create_Array_Of_Labels;
-        return;
     }
 }
 
