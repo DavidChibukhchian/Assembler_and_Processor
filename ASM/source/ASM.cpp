@@ -2,6 +2,10 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
+#define here printf("\nfunc: %s | line: %d)\n", __func__, __LINE__);
+
+//----------------------------------------------------------------------------------------------------------------------
+
 static const char  VERSION = 7;
 static const int SIGNATURE = 0x123ABCD;
 
@@ -45,14 +49,52 @@ enum ARG_type
 
 //----------------------------------------------------------------------------------------------------------------------
 
+void* recalloc(void* mem_pointer, size_t new_size)
+{
+    if (new_size == 0)
+    {
+        free(mem_pointer);
+        return nullptr;
+    }
+
+    void* new_pointer = nullptr;
+
+    if (mem_pointer == nullptr)
+    {
+        new_pointer = (void*)calloc (new_size, sizeof(char));
+        if (new_pointer == nullptr)
+            return nullptr;
+
+        return new_pointer;
+    }
+
+    size_t old_size = _msize(mem_pointer);
+
+    new_pointer = (void*)realloc (mem_pointer, new_size);
+    if (new_pointer == nullptr)
+        return nullptr;
+
+    if (new_size > old_size)
+    {
+        for (size_t i = old_size; i < new_size; i++)
+            ((char*)new_pointer)[i] = 0;
+    }
+
+    return new_pointer;
+
+    // Возвращается  указатель на переразмещенный  блок памяти.
+    // Если нет подходящей памяти, возвращается NULL (но память по ptr не освобождается).
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 static void parse_command(char* command, char** cmd, char** argument, size_t* length_of_cmd)
 {
     *cmd = strtok(command, " ");
-    *length_of_cmd = strlen(*cmd);
-
     *argument = strtok(nullptr, " ");
-}
 
+    *length_of_cmd = strlen(*cmd);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -72,8 +114,23 @@ void close_files(files_struct* files)
 
     if (files->ASM_out != nullptr)
         fclose(files->ASM_out);
-
+    
     fclose(files->logfile);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+int open_logfile(files_struct* files)
+{
+    FILE* logfile = fopen("ASM_logfile.txt",  "w");
+    if (logfile == nullptr)
+    {
+        printf("---\nERROR: Failed to create logfile\n---");
+        return Failed_To_Create_Logfile;
+    }
+    files->logfile = logfile;
+
+    return Done_Successfully;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -101,7 +158,7 @@ int open_files(files_struct* files, char** argv)
 
 static void code_Shrink_To_Fit(code_struct* code)
 {
-    char* new_pointer = (char*)realloc (code->pointer, code->offset);
+    char* new_pointer = (char*)recalloc (code->pointer, code->offset);
     if (new_pointer == nullptr)
     {
         code->err = Failed_To_Resize_Array_Of_Code;
@@ -114,7 +171,7 @@ static void code_Shrink_To_Fit(code_struct* code)
 
 static void code_Expand(code_struct* code)
 {
-    char* new_pointer = (char*)realloc (code->pointer, MULTIPLIER * code->size);
+    char* new_pointer = (char*)recalloc (code->pointer, MULTIPLIER * code->size);
     if (new_pointer == nullptr)
     {
         code->err = Failed_To_Resize_Array_Of_Code;
@@ -195,7 +252,7 @@ static int check_square_brackets(char* argument, size_t length)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int case_Number(char* argument, unsigned char* arg_mask, int* value)
+static int case_NUM(char* argument, unsigned char* arg_mask, int* value)
 {
     size_t length_of_number = 0;
 
@@ -215,7 +272,7 @@ static int case_Number(char* argument, unsigned char* arg_mask, int* value)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int case_Register(char* argument, unsigned char* arg_mask, char* reg, size_t length)
+static int case_REG(char* argument, unsigned char* arg_mask, char* reg, size_t length)
 {
     if ((length == 3) && (argument[0] == 'r') && (argument[2] == 'x'))
     {
@@ -234,45 +291,82 @@ static int case_Register(char* argument, unsigned char* arg_mask, char* reg, siz
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int case_RAM(char* argument, unsigned char* arg_mask, char* reg, int* value, size_t length)
+static int case_RAM_REG_NUM(char* argument, unsigned char* arg_mask, int* value)
 {
     size_t length_of_number = 0;
 
+    if ((argument[4] == '+') && (sscanf((argument + 5), "%d%n", value, &length_of_number)))
+    {
+        if (*(argument + 5 + length_of_number) == ']')
+        {
+            *arg_mask = (*arg_mask) | ARG_NUM;
+            return Done_Successfully;
+        }
+    }
+
+    return next_case;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static int case_RAM_REG(char* argument, unsigned char* arg_mask, char* reg, int* value)
+{
+    if ((argument[1] == 'r') && (argument[3] == 'x'))
+    {
+        if ((argument[2] - 'a') < NUMBER_OF_REGISTERS)
+        {
+            *arg_mask = (*arg_mask) | ARG_REG;
+            *reg = argument[2] - 'a' + 1;
+
+            int res = case_RAM_REG_NUM(argument, arg_mask, value);
+            if (res != next_case)
+                return res;
+        }
+        else
+            return Nonexistent_Register;
+
+        if (argument[4] == ']')
+            return Done_Successfully;
+    }
+
+    return next_case;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static int case_RAM_NUM(char* argument, unsigned char* arg_mask, int* value)
+{
+    size_t length_of_number = 0;
+
+    if (sscanf(argument + 1, "%d%n", value, &length_of_number))
+    {
+        if (*(argument + 1 + length_of_number) == ']')
+        {
+            *arg_mask = (*arg_mask) | ARG_NUM;
+            return Done_Successfully;
+        }
+    }
+
+    return next_case;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static int case_RAM(char* argument, unsigned char* arg_mask, char* reg, int* value, size_t length)
+{
     if ((argument[0] == '[') && (argument[length - 1] == ']'))
     {
         *arg_mask = (*arg_mask) | ARG_RAM;
 
-        if ((argument[1] == 'r') && (argument[3] == 'x'))
-        {
-            if ((argument[2] - 'a') < NUMBER_OF_REGISTERS)
-            {
-                *arg_mask = (*arg_mask) | ARG_REG;
-                *reg = argument[2] - 'a' + 1;
+        int res = 0;
 
-                if ((argument[4] == '+') && (sscanf((argument + 5), "%d%n", value, &length_of_number)))
-                {
-                    if (*(argument + 5 + length_of_number) == ']')
-                    {
-                        *arg_mask = (*arg_mask) | ARG_NUM;
-                        return Done_Successfully;
-                    }
-                }
-            }
-            else
-                return Nonexistent_Register;
+        res = case_RAM_REG(argument, arg_mask, reg, value);
+        if (res != next_case)
+            return res;
 
-            if (argument[4] == ']')
-                return Done_Successfully;
-        }
-
-        if (sscanf(argument + 1, "%d%n", value, &length_of_number))
-        {
-            if (*(argument + 1 + length_of_number) == ']')
-            {
-                *arg_mask = (*arg_mask) | ARG_NUM;
-                return Done_Successfully;
-            }
-        }
+        res = case_RAM_NUM(argument, arg_mask, value);
+        if (res != next_case)
+            return res;
     }
 
     return next_case;
@@ -285,15 +379,15 @@ static int identify_arg(char* argument, unsigned char* arg_mask, char* reg, int*
     size_t length = strlen(argument);
 
     if (check_square_brackets(argument, length))
-        return Incorrect_Command;
+        return Incorrect_Argument;
 
     int res = 0;
 
-    res = case_Number(argument, arg_mask, value);
+    res = case_NUM(argument, arg_mask, value);
     if (res != next_case)
         return res;
 
-    res = case_Register(argument, arg_mask, reg, length);
+    res = case_REG(argument, arg_mask, reg, length);
     if (res != next_case)
         return res;
 
@@ -301,7 +395,7 @@ static int identify_arg(char* argument, unsigned char* arg_mask, char* reg, int*
     if (res != next_case)
         return res;
 
-    return Incorrect_Command;
+    return Incorrect_Argument;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -383,7 +477,7 @@ static void jumps_Expand(jumps_struct* jumps)
 {
     size_t new_size = MULTIPLIER * jumps->number_of_addresses * sizeof(jump_struct);
 
-    jump_struct* new_pointer = (jump_struct*)realloc (jumps->jump, new_size);
+    jump_struct* new_pointer = (jump_struct*)recalloc (jumps->jump, new_size);
     if (new_pointer == nullptr)
     {
         jumps->err = Failed_To_Resize_Array_Of_Jump_Addresses;
@@ -436,6 +530,7 @@ static void code_Dtor(code_struct* code)
     if (code->pointer != nullptr)
         free(code->pointer);
 }
+
 //----------------------------------------------------------------------------------------------------------------------
 
 static void code_Ctor(code_struct* code, commands_struct* commands)
@@ -464,17 +559,13 @@ int record_commands_to_buffer(files_struct* files, commands_struct* commands)
 {
     size_t filesize = get_filesize(files->ASM_in);
     if (filesize == 0)
-    {
         return Input_File_Is_Empty;
-    }
 
     char* buffer = read_file_to_buffer(files->ASM_in, filesize);
     if (buffer == nullptr)
-    {
         return Failed_To_Create_Buffer;
-    }
-    commands->buffer = buffer;
 
+    commands->buffer = buffer;
     commands->number_of_commands = count_lines(buffer);
 
     char** array_of_commands = split_buffer(buffer, commands->number_of_commands, filesize);
@@ -579,12 +670,12 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
 
 int create_code_array(code_struct* code, commands_struct* commands)
 {
-    labels_struct Labels_structure = {};
-    labels_struct* labels = &Labels_structure;
+    labels_struct labels_structure = {};
+    labels_struct* labels = &labels_structure;
     labels->label = nullptr;
 
-    jumps_struct Jumps_structure = {};
-    jumps_struct* jumps = &Jumps_structure;
+    jumps_struct jumps_structure = {};
+    jumps_struct* jumps = &jumps_structure;
     jumps->jump = nullptr;
 
     code_Ctor(code, commands);
@@ -597,12 +688,16 @@ int create_code_array(code_struct* code, commands_struct* commands)
     VERIFY(labels->err);
 
     int err = record_commands_to_code(commands, code, labels, jumps);
-    if (err) return err;
+    if (err)
+    {
+        return err;
+    }
 
     free_buffer(commands);
     labels_Dtor(labels);
     jumps_Dtor(jumps);
-    
+
+    printf("---\nSIZE = %d\n(without signature and version)\n", code->offset - SIZE_OF_SIGNATURE - SIZE_OF_VERSION);
     return Done_Successfully;
 }
 

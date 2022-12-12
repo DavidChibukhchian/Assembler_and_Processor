@@ -2,7 +2,7 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
-const char* error_message[] = { "Done Successfully",                           // 0
+const char* error_message[] = { "Done Successfully",                           // 0 both
                                 "Failed to create logfile",                    // 1
                                 "Incorrect number of command line arguments",  // 2
                                 "Failed to open input file",                   // 3
@@ -14,34 +14,33 @@ const char* error_message[] = { "Done Successfully",                           /
 
                                 "Failed to create buffer",                     // 8
                                 "Failed to write code to file",                // 9
-                                "Missed HLT command",                          // 10
-                                "Too few elements in stack",                   // 11
+                                "Too few elements in stack",                   // 10 C
 
-                                "Division by zero",                            // 12
-                                "Entered invalid value",                       // 13
-                                "Failed to create dump file",                  // 14
-                                "Failed to create array of commands",          // 15
+                                "Division by zero",                            // 11
+                                "Entered invalid value",                       // 12 C
+                                "Failed to create dump file",                  // 13 C
+                                "Failed to create array of commands",          // 14
 
-                                "Failed to create array of code",              // 16
-                                "Failed to resize array of code",              // 17
+                                "Failed to create array of code",              // 15
+                                "Failed to resize array of code",              // 16
 
-                                "Syntax error: incorrect command",             // 18
-                                "Syntax error: incorrect argument",            //19
-                                "Syntax error: too few arguments to such command", // 20
-                                "Syntax error: too many arguments to such command", // 21
+                                "Syntax error: incorrect command",             // 17 A
+                                "Syntax error: incorrect argument",            //18 A
+                                "Syntax error: too few arguments to such command", // 19 A
+                                "Syntax error: too many arguments to such command", // 20 A
 
-                                "Syntax error: invalid label name",           // 22
-                                "Syntax error: too many labels in a row",     // 23
-                                "Syntax error: incorrect jump command",       // 24
-                                "This label already exists",                  // 25
-                                "Jump to nonexistent label",                  // 26
+                                "Syntax error: invalid label name",           // 21 A
+                                "Syntax error: too many labels in a row",     // 22 A
+                                "Syntax error: incorrect jump command",       // 23 A
+                                "This label already exists",                  // 24 A
+                                "Jump to nonexistent label",                  // 25 A
 
-                                "Nonexistent register",                       // 27
-                                "Failed to create output file",               // 28
-                                "Failed to push bytes to code",               // 29
-                                "Failed to create array of labels",           // 30
-                                "Failed to create array of jump addresses",   // 31
-                                "Failed to resize array of jump addresses" }; // 32
+                                "Nonexistent register",                       // 26 A
+                                "Failed to create output file",               // 27
+                                "Failed to push bytes to code",               // 28
+                                "Failed to create array of labels",           // 29
+                                "Failed to create array of jump addresses",   // 30
+                                "Failed to resize array of jump addresses" }; // 31
 
 //----------------------------------------------------------------------------------------------------------------------
 

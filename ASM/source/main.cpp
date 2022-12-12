@@ -2,10 +2,9 @@
 
 int main(int argc, char* argv[])
 {
-    int err = 0;
-
     files_struct files = {};
-    OPEN_LOGFILE(files);
+    int err = open_logfile(&files);
+    if (err) return err;
 
     ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments);
 
@@ -24,6 +23,7 @@ int main(int argc, char* argv[])
     VERIFY_err;
 
     close_files(&files);
-    
+
+    printf("---\nDone successfully\n---");
     return 0;
 }
