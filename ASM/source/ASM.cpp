@@ -2,6 +2,10 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
+#define here printf("\nfunc: %s | line: %d)\n", __func__, __LINE__);
+
+//----------------------------------------------------------------------------------------------------------------------
+
 static const char  VERSION = 7;
 static const int SIGNATURE = 0x123ABCD;
 
@@ -38,9 +42,9 @@ enum Commands
 
 enum ARG_type
 {
-    NO_ARGS = 0,
-    ONE_ARG = 1,
-    LABEL   = 2
+    NO_ARGS,
+    NUM_REG_RAM,
+    LABEL
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -179,7 +183,7 @@ static int check_number_of_arguments(char* argument, ARG_type arg_type)
     if ((arg_type == NO_ARGS) && (argument != nullptr))
         return Too_Many_Arguments_To_Such_Command;
 
-    if (((arg_type == ONE_ARG) || (arg_type == LABEL)) && (argument == nullptr))
+    if (((arg_type == NUM_REG_RAM) || (arg_type == LABEL)) && (argument == nullptr))
         return Too_Few_Arguments_To_Such_Command;
 
     return Done_Successfully;
@@ -368,7 +372,7 @@ static int create_arg_mask(ARG_type arg_type, char* argument, unsigned char* arg
         return Done_Successfully;
     }
 
-    if (arg_type == ONE_ARG)
+    if (arg_type == NUM_REG_RAM)
     {
         int res = identify_arg(argument, arg_mask, reg, value);
         if (res != Incorrect_Command)
@@ -653,7 +657,8 @@ int create_code_array(code_struct* code, commands_struct* commands)
     free_buffer(commands);
     labels_Dtor(labels);
     jumps_Dtor(jumps);
-    
+
+    printf("---\nSIZE = %d\n(without signature and version)\n", code->offset - SIZE_OF_SIGNATURE - SIZE_OF_VERSION);
     return Done_Successfully;
 }
 

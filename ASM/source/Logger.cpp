@@ -13,13 +13,13 @@ const char* error_message[] = { "Done Successfully",                           /
                                 "Input file is empty",                         // 7
 
                                 "Failed to create buffer",                     // 8
-                                "Failed to write code to file",                // 9
+                                "Failed to write code to file",                // 9 A
                                 "Too few elements in stack",                   // 10 C
 
-                                "Division by zero",                            // 11
+                                "Division by zero",                            // 11 C
                                 "Entered invalid value",                       // 12 C
                                 "Failed to create dump file",                  // 13 C
-                                "Failed to create array of commands",          // 14
+                                "Failed to create array of commands",          // 14 A
 
                                 "Failed to create array of code",              // 15
                                 "Failed to resize array of code",              // 16
@@ -37,10 +37,11 @@ const char* error_message[] = { "Done Successfully",                           /
 
                                 "Nonexistent register",                       // 26 A
                                 "Failed to create output file",               // 27
-                                "Failed to push bytes to code",               // 28
-                                "Failed to create array of labels",           // 29
-                                "Failed to create array of jump addresses",   // 30
-                                "Failed to resize array of jump addresses" }; // 31
+                                "Failed to push bytes to code",               // 28 A
+                                "Failed to create array of labels",           // 29 A
+                                "Failed to resize array of labels",           // 30 A
+                                "Failed to create array of jump addresses",   // 31 A
+                                "Failed to resize array of jump addresses" }; // 32 A
 
 //----------------------------------------------------------------------------------------------------------------------
 

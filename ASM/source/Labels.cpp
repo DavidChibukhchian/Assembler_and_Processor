@@ -110,7 +110,7 @@ static void labels_Expand(labels_struct* labels)
     label_struct* new_pointer = (label_struct*)realloc (labels->label, new_size);
     if (new_pointer == nullptr)
     {
-        labels->err = Failed_To_Create_Array_Of_Labels;  //todo "resize"
+        labels->err = Failed_To_Resize_Array_Of_Labels;  //todo "resize"
         return;
     }
     labels->label = new_pointer;
