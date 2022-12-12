@@ -19,6 +19,8 @@ void change_delimiter(char* buffer, char old_delimiter, char new_delimiter);
 
 char** split_buffer(char* buffer, size_t number_of_lines, size_t filesize);
 
+void* recalloc(void* mem_pointer, size_t new_size);
+
 //----------------------------------------------------------------------------------------------------------------------
 
 #endif // _BUFFER_H_
