@@ -46,9 +46,7 @@ struct jumps_struct
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void close_files(files_struct* files);
-
-void open_logfile(files_struct* files);
+int open_logfile(files_struct* files);
 
 int open_files(files_struct* files, char** argv);
 
@@ -58,57 +56,47 @@ int create_code_array(code_struct* code, commands_struct* commands);
 
 int write_code_to_file(code_struct* code, files_struct* files);
 
-//----------------------------------------------------------------------------------------------------------------------
-
-#define OPEN_LOGFILE(files)                                  \
-                                                             \
-FILE* logfile = fopen("ASM_logfile.txt",  "w");              \
-if (logfile == nullptr)                                      \
-{                                                            \
-    printf("---\nERROR: Failed to create logfile\n---");     \
-    return Failed_To_Create_Logfile;                         \
-}                                                            \
-files.logfile = logfile;
+void close_files(files_struct* files);
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define VERIFY_err                                           \
-                                                             \
-if (err)                                                     \
-{                                                            \
-    dump_to_console(err);                                    \
-    dump_to_logfile(files.logfile, err);                     \
-    close_files(&files);                                     \
-                                                             \
-    return err;                                              \
+#define VERIFY_err                                                                                                     \
+                                                                                                                       \
+if (err)                                                                                                               \
+{                                                                                                                      \
+    dump_to_console(err);                                                                                              \
+    dump_to_logfile(files.logfile, err);                                                                               \
+    close_files(&files);                                                                                               \
+                                                                                                                       \
+    return err;                                                                                                        \
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define ASSERT(condition, err)                               \
-                                                             \
-if (!(condition))                                            \
-{                                                            \
-    dump_to_console(err);                                    \
-    dump_to_logfile(files.logfile, err);                     \
-    fclose(files.logfile);                                   \
-                                                             \
-    return err;                                              \
+#define ASSERT(condition, err)                                                                                         \
+                                                                                                                       \
+if (!(condition))                                                                                                      \
+{                                                                                                                      \
+    dump_to_console(err);                                                                                              \
+    dump_to_logfile(files.logfile, err);                                                                               \
+    fclose(files.logfile);                                                                                             \
+                                                                                                                       \
+    return err;                                                                                                        \
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define VERIFY(err)                                          \
-                                                             \
-if (err)                                                     \
-{                                                            \
-    free_buffer(commands);                                   \
-                                                             \
-    code_Dtor(code);                                         \
-    labels_Dtor(labels);                                     \
-    jumps_Dtor(jumps);                                       \
-                                                             \
-    return err;                                              \
+#define VERIFY(err)                                                                                                    \
+                                                                                                                       \
+if (err)                                                                                                               \
+{                                                                                                                      \
+    free_buffer(commands);                                                                                             \
+                                                                                                                       \
+    code_Dtor(code);                                                                                                   \
+    labels_Dtor(labels);                                                                                               \
+    jumps_Dtor(jumps);                                                                                                 \
+                                                                                                                       \
+    return err;                                                                                                        \
 }
 
 //----------------------------------------------------------------------------------------------------------------------
