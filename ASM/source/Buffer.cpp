@@ -90,3 +90,42 @@ char** split_buffer(char* buffer, size_t number_of_lines, size_t filesize)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+
+void* recalloc(void* mem_pointer, size_t new_size)
+{
+    if (new_size == 0)
+    {
+        free(mem_pointer);
+        return nullptr;
+    }
+
+    void* new_pointer = nullptr;
+
+    if (mem_pointer == nullptr)
+    {
+        new_pointer = (void*)calloc (new_size, sizeof(char));
+        if (new_pointer == nullptr)
+            return nullptr;
+
+        return new_pointer;
+    }
+
+    size_t old_size = _msize(mem_pointer);
+
+    new_pointer = (void*)realloc (mem_pointer, new_size);
+    if (new_pointer == nullptr)
+        return nullptr;
+
+    if (new_size > old_size)
+    {
+        for (size_t i = old_size; i < new_size; i++)
+            ((char*)new_pointer)[i] = 0;
+    }
+
+    return new_pointer;
+
+    // Возвращается  указатель на переразмещенный  блок памяти.
+    // Если нет подходящей памяти, возвращается NULL (но память по ptr не освобождается).
+}
+
+//----------------------------------------------------------------------------------------------------------------------
