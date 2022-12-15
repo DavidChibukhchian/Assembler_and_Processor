@@ -2,10 +2,6 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define here printf("\nfunc: %s | line: %d)\n", __func__, __LINE__);
-
-//----------------------------------------------------------------------------------------------------------------------
-
 static const char  VERSION = 7;
 static const int SIGNATURE = 0x123ABCD;
 
@@ -668,8 +664,7 @@ int create_code(code_struct* code, commands_struct* commands, size_t* line)
     free_buffer(commands);
     labels_Dtor(&labels);
     jumps_Dtor(&jumps);
-
-    printf("---\nSIZE = %d\n(without signature and version)\n", code->offset - SIZE_OF_SIGNATURE - SIZE_OF_VERSION);
+    
     return Done_Successfully;
 }
 
