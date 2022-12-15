@@ -40,7 +40,7 @@ enum Errors
     Incorrect_Jump_Command                   = 23,
     This_Label_Already_Exists                = 24,
     Jump_To_Nonexistent_Label                = 25,
-    Nonexistent_Register                     = 26,
+    Operating_With_Nonexistent_Register      = 26,
 
     Failed_To_Create_Output_File             = 27,
     Failed_To_Push_Bytes_To_Code             = 28,
