@@ -28,11 +28,13 @@ struct code_struct
     size_t size;
     int offset;
     int err;
+    size_t wrong_line;
 };
 
 struct jump_struct
 {
-    int address;
+    int code_address;
+    size_t line;
     char* label_name;
 };
 
@@ -52,7 +54,7 @@ int open_files(files_struct* files, char** argv);
 
 int record_commands_to_buffer(files_struct* files, commands_struct* commands);
 
-int create_code_array(code_struct* code, commands_struct* commands);
+int create_code(code_struct* code, commands_struct* commands, size_t* err_line);
 
 int write_code_to_file(code_struct* code, files_struct* files);
 
@@ -64,8 +66,8 @@ void close_files(files_struct* files);
                                                                                                                        \
 if (err)                                                                                                               \
 {                                                                                                                      \
-    dump_to_console(err);                                                                                              \
-    dump_to_logfile(files.logfile, err);                                                                               \
+    dump_to_console(err, err_line);                                                                                    \
+    dump_to_logfile(files.logfile, err, err_line);                                                                     \
     close_files(&files);                                                                                               \
                                                                                                                        \
     return err;                                                                                                        \
@@ -79,7 +81,22 @@ if (!(condition))                                                               
 {                                                                                                                      \
     dump_to_console(err);                                                                                              \
     dump_to_logfile(files.logfile, err);                                                                               \
-    fclose(files.logfile);                                                                                             \
+    close_files(&files);                                                                                               \
+                                                                                                                       \
+    return err;                                                                                                        \
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+#define CHECK_Ctor(err)                                                                                                \
+                                                                                                                       \
+if (err)                                                                                                               \
+{                                                                                                                      \
+    free_buffer(commands);                                                                                             \
+                                                                                                                       \
+    code_Dtor(code);                                                                                                   \
+    labels_Dtor(&labels);                                                                                              \
+    jumps_Dtor(&jumps);                                                                                                \
                                                                                                                        \
     return err;                                                                                                        \
 }
@@ -90,6 +107,9 @@ if (!(condition))                                                               
                                                                                                                        \
 if (err)                                                                                                               \
 {                                                                                                                      \
+    if (syntax_error)                                                                                                  \
+        *err_line = i + 1;                                                                                             \
+                                                                                                                       \
     free_buffer(commands);                                                                                             \
                                                                                                                        \
     code_Dtor(code);                                                                                                   \

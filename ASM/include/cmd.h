@@ -2,12 +2,12 @@
 
 DEF_CMD(hlt, NO_ARGS, {})
 
-DEF_CMD(push, ONE_ARG,
+DEF_CMD(push, NUM_REG_RAM,
 {
 
 })
 
-DEF_CMD(pop, ONE_ARG,
+DEF_CMD(pop, NUM_REG_RAM,
 {
 
 })

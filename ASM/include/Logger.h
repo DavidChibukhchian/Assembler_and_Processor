@@ -41,18 +41,20 @@ enum Errors
     This_Label_Already_Exists                = 24,
     Jump_To_Nonexistent_Label                = 25,
     Nonexistent_Register                     = 26,
+
     Failed_To_Create_Output_File             = 27,
     Failed_To_Push_Bytes_To_Code             = 28,
-    Failed_To_Create_Array_Of_Labels         = 39,
-    Failed_To_Create_Array_Of_Jump_Addresses = 30,
-    Failed_To_Resize_Array_Of_Jump_Addresses = 31
+    Failed_To_Create_Array_Of_Labels         = 29,
+    Failed_To_Resize_Array_Of_Labels         = 30,
+    Failed_To_Create_Array_Of_Jump_Addresses = 31,
+    Failed_To_Resize_Array_Of_Jump_Addresses = 32
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void dump_to_console(int err);
+void dump_to_console(int err, size_t err_line = 0);
 
-void dump_to_logfile(FILE* logfile, int err);
+void dump_to_logfile(FILE* logfile, int err, size_t err_line = 0);
 
 //----------------------------------------------------------------------------------------------------------------------
 
