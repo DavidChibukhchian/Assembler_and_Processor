@@ -23,7 +23,7 @@ void labels_Ctor(labels_struct* labels)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int incorrect_label_name(labels_struct* labels, char* label_name, size_t length_of_label_name)
+static int invalid_label_name(labels_struct* labels, char* label_name, size_t length_of_label_name)
 {
     for (size_t i = 0; i < length_of_label_name - 1; i++)
     {
@@ -71,34 +71,45 @@ static int label_already_exists(labels_struct* labels, char* label_name)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void labels_Check_Label(labels_struct* labels, char* label_name, size_t value, size_t length_of_label_name)
+void labels_Check_Label(labels_struct* labels, char* label_name, size_t value, size_t length_of_label_name, bool* syntax_error)
 {
-    if (incorrect_label_name(labels, label_name, length_of_label_name))
-        return;
-
-    if (many_labels_in_a_row(labels, value))
-        return;
-
-    if (label_already_exists(labels, label_name))
-        return;
-}
-
-
-//----------------------------------------------------------------------------------------------------------------------
-
-void labels_Check_Jump(labels_struct* labels, char* label_name)
-{
-    if ((label_name[0] != ':') || (label_name[1] == '\0'))
+    if (invalid_label_name(labels, label_name, length_of_label_name))
     {
-        labels->err = Incorrect_Jump_Command;
+        *syntax_error = true;
         return;
     }
 
+    if (many_labels_in_a_row(labels, value))
+    {
+        *syntax_error = true;
+        return;
+    }
+
+    if (label_already_exists(labels, label_name))
+    {
+        *syntax_error = true;
+        return;
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void labels_Check_Jump(labels_struct* labels, char* label_name, bool* syntax_error)
+{
     label_name++;
     size_t length_of_label_name = strlen(label_name);
 
-    if (incorrect_label_name(labels, label_name, length_of_label_name + 1))
+    if (invalid_label_name(labels, label_name, length_of_label_name + 1))
+    {
+        *syntax_error = true;
         return;
+    }
+
+    if ((*(label_name - 1) != ':') || (*(label_name) == '\0'))
+    {
+        labels->err = Incorrect_Jump_Command;
+        *syntax_error = true;
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -110,7 +121,7 @@ static void labels_Expand(labels_struct* labels)
     label_struct* new_pointer = (label_struct*)realloc (labels->label, new_size);
     if (new_pointer == nullptr)
     {
-        labels->err = Failed_To_Resize_Array_Of_Labels;  //todo "resize"
+        labels->err = Failed_To_Resize_Array_Of_Labels;
         return;
     }
     labels->label = new_pointer;
@@ -140,7 +151,7 @@ void labels_Push(labels_struct* labels, char* label_name, size_t value)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void labels_Set(labels_struct* labels, void* jumps_ptr, char* code_pointer)
+void labels_Set(labels_struct* labels, void* jumps_ptr, char* code_pointer, size_t* err_line)
 {
     jumps_struct* jumps = (jumps_struct*) jumps_ptr;
     bool label_was_set = false;
@@ -154,7 +165,7 @@ void labels_Set(labels_struct* labels, void* jumps_ptr, char* code_pointer)
                 size_t len = strlen(jumps->jump[i].label_name);
                 if (labels->label[j].name[len] == ':')
                 {
-                    *(code_pointer + jumps->jump[i].address) = labels->label[j].value;
+                    *(code_pointer + jumps->jump[i].code_address) = labels->label[j].value;
                     label_was_set = true;
                     break;
                 }
@@ -167,6 +178,7 @@ void labels_Set(labels_struct* labels, void* jumps_ptr, char* code_pointer)
             continue;
         }
 
+        *err_line = jumps->jump[i].line;
         jumps->err = Jump_To_Nonexistent_Label;
         return;
     }

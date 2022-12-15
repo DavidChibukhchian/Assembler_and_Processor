@@ -2,8 +2,11 @@
 
 int main(int argc, char* argv[])
 {
+    int err = 0;
+    size_t err_line = 0;
+
     files_struct files = {};
-    int err = open_logfile(&files);
+    err = open_logfile(&files);
     if (err) return err;
 
     ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments);
@@ -16,7 +19,7 @@ int main(int argc, char* argv[])
     VERIFY_err;
 
     code_struct code = {};
-    err = create_code_array(&code, &commands);
+    err = create_code(&code, &commands, &err_line);
     VERIFY_err;
 
     err = write_code_to_file(&code, &files);

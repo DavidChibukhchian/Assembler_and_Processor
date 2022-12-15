@@ -49,12 +49,18 @@ enum ARG_type
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void parse_command(char* command, char** cmd, char** argument, size_t* length_of_cmd)
+static void parse_command(code_struct* code, char* command, char** cmd, char** argument, size_t* length_of_cmd, bool* syntax_error)
 {
     *cmd = strtok(command, " ");
+    *length_of_cmd = strlen(*cmd);
+
     *argument = strtok(nullptr, " ");
 
-    *length_of_cmd = strlen(*cmd);
+    if (strtok(nullptr, " ") != nullptr)
+    {
+        code->err = Too_Many_Arguments_To_Such_Command;
+        *syntax_error = true;
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -91,6 +97,9 @@ int open_logfile(files_struct* files)
     }
     files->logfile = logfile;
 
+    files->ASM_in  = nullptr;
+    files->ASM_out = nullptr;
+
     return Done_Successfully;
 }
 
@@ -119,7 +128,7 @@ int open_files(files_struct* files, char** argv)
 
 static void code_Shrink_To_Fit(code_struct* code)
 {
-    char* new_pointer = (char*)recalloc (code->pointer, code->offset);
+    char* new_pointer = (char*)realloc (code->pointer, code->offset);
     if (new_pointer == nullptr)
     {
         code->err = Failed_To_Resize_Array_Of_Code;
@@ -132,7 +141,7 @@ static void code_Shrink_To_Fit(code_struct* code)
 
 static void code_Expand(code_struct* code)
 {
-    char* new_pointer = (char*)recalloc (code->pointer, MULTIPLIER * code->size);
+    char* new_pointer = (char*)realloc (code->pointer, MULTIPLIER * code->size);
     if (new_pointer == nullptr)
     {
         code->err = Failed_To_Resize_Array_Of_Code;
@@ -178,15 +187,20 @@ static void code_Push_Int(code_struct* code, int value)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int check_number_of_arguments(char* argument, ARG_type arg_type)
+static void check_number_of_arguments(code_struct* code, char* argument, ARG_type arg_type, bool* syntax_error)
 {
     if ((arg_type == NO_ARGS) && (argument != nullptr))
-        return Too_Many_Arguments_To_Such_Command;
+    {
+        code->err = Too_Many_Arguments_To_Such_Command;
+        *syntax_error = true;
+        return;
+    }
 
     if (((arg_type == NUM_REG_RAM) || (arg_type == LABEL)) && (argument == nullptr))
-        return Too_Few_Arguments_To_Such_Command;
-
-    return Done_Successfully;
+    {
+        code->err = Too_Few_Arguments_To_Such_Command;
+        *syntax_error = true;
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -361,25 +375,23 @@ static int identify_arg(char* argument, unsigned char* arg_mask, char* reg, int*
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int create_arg_mask(ARG_type arg_type, char* argument, unsigned char* arg_mask, char* reg, int* value)
+static void create_arg_mask(code_struct* code, ARG_type arg_type, char* argument, unsigned char* arg_mask, char* reg, int* value, bool* syntax_error)
 {
     if (arg_type == NO_ARGS)
-        return Done_Successfully;
+        return;
 
     if (arg_type == LABEL)
     {
         *arg_mask = (*arg_mask) | ARG_NUM;
-        return Done_Successfully;
+        return;
     }
 
     if (arg_type == NUM_REG_RAM)
     {
-        int res = identify_arg(argument, arg_mask, reg, value);
-        if (res != Incorrect_Command)
-            return res;
+        code->err = identify_arg(argument, arg_mask, reg, value);
+        if (code->err)
+            *syntax_error = true;
     }
-
-    return Incorrect_Command;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -390,16 +402,16 @@ static void code_Push_Command(code_struct* code, unsigned char cmd_code, int val
     if (code->err)
         return;
 
-    if (cmd_code & ARG_REG)
+    if (cmd_code & ARG_NUM)
     {
-        code_Push_Char(code, reg);
+        code_Push_Int(code, value);
         if (code->err)
             return;
     }
 
-    if (cmd_code & ARG_NUM)
+    if (cmd_code & ARG_REG)
     {
-        code_Push_Int(code, value);
+        code_Push_Char(code, reg);
     }
 }
 
@@ -438,7 +450,7 @@ static void jumps_Expand(jumps_struct* jumps)
 {
     size_t new_size = MULTIPLIER * jumps->number_of_addresses * sizeof(jump_struct);
 
-    jump_struct* new_pointer = (jump_struct*)recalloc (jumps->jump, new_size);
+    jump_struct* new_pointer = (jump_struct*)realloc (jumps->jump, new_size);
     if (new_pointer == nullptr)
     {
         jumps->err = Failed_To_Resize_Array_Of_Jump_Addresses;
@@ -451,7 +463,7 @@ static void jumps_Expand(jumps_struct* jumps)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void jumps_Put_Address(jumps_struct* jumps, int address, char* label_name)
+static void jumps_Put_Code_Address(jumps_struct* jumps, int offset, char* label_name, size_t line)
 {
     if (jumps->number_of_free_addresses == 0)
     {
@@ -461,8 +473,10 @@ static void jumps_Put_Address(jumps_struct* jumps, int address, char* label_name
     }
 
     size_t idx = jumps->number_of_addresses;
-    jumps->jump[idx].address    = address;
-    jumps->jump[idx].label_name = ++label_name;
+
+    jumps->jump[idx].code_address = ++offset;
+    jumps->jump[idx].line         = ++line;
+    jumps->jump[idx].label_name   = ++label_name;
 
     jumps->number_of_addresses++;
     jumps->number_of_free_addresses--;
@@ -498,7 +512,7 @@ static void code_Ctor(code_struct* code, commands_struct* commands)
 {
     code->err    = 0;
     code->offset = 0;
-    code->size = SIZE_OF_SIGNATURE + SIZE_OF_VERSION + commands->number_of_commands;
+    code->size   = SIZE_OF_SIGNATURE + SIZE_OF_VERSION + commands->number_of_commands;
 
     code->pointer = (char*)calloc (code->size, sizeof(char));
     if (code->pointer == nullptr)
@@ -543,7 +557,7 @@ int record_commands_to_buffer(files_struct* files, commands_struct* commands)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int record_commands_to_code(commands_struct* commands, code_struct* code, labels_struct* labels, jumps_struct* jumps)
+static int record_commands_to_code(commands_struct* commands, code_struct* code, labels_struct* labels, jumps_struct* jumps, size_t* err_line)
 {
     unsigned char cmd_code = 0;
     unsigned char arg_mask = 0;
@@ -555,15 +569,13 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
     char* argument = nullptr;
     size_t length_of_cmd = 0;
 
-    for (size_t i = 0; i < commands->number_of_commands; i++)
-    {
-        parse_command(commands->array_of_commands[i], &cmd, &argument, &length_of_cmd);
+    bool syntax_error = false;
 
-        if (strtok(nullptr, " ") != nullptr)
-        {
-            code->err = Too_Many_Arguments_To_Such_Command;
-            VERIFY(code->err);
-        }
+    size_t i = 0;
+    while (i < commands->number_of_commands)
+    {
+        parse_command(code, commands->array_of_commands[i], &cmd, &argument, &length_of_cmd, &syntax_error);
+        VERIFY(code->err);
 
         if (false) {}
 
@@ -576,18 +588,18 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
             cmd_code = CMD_##name;                                                                                     \
             reset_variables(&reg, &value, &arg_mask);                                                                  \
                                                                                                                        \
-            code->err = check_number_of_arguments(argument, arg_type);                                                 \
+            check_number_of_arguments(code, argument, arg_type, &syntax_error);                                        \
             VERIFY(code->err);                                                                                         \
                                                                                                                        \
-            code->err = create_arg_mask(arg_type, argument, &arg_mask, &reg, &value);                                  \
+            create_arg_mask(code, arg_type, argument, &arg_mask, &reg, &value, &syntax_error);                         \
             VERIFY(code->err);                                                                                         \
                                                                                                                        \
             if (arg_type == LABEL)                                                                                     \
             {                                                                                                          \
-                labels_Check_Jump(labels, argument);                                                                   \
+                labels_Check_Jump(labels, argument, &syntax_error);                                                    \
                 VERIFY(labels->err);                                                                                   \
                                                                                                                        \
-                jumps_Put_Address(jumps, code->offset + 1, argument);                                                  \
+                jumps_Put_Code_Address(jumps, code->offset, argument, i);                                              \
                 VERIFY(jumps->err);                                                                                    \
             }                                                                                                          \
                                                                                                                        \
@@ -604,7 +616,7 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
 
         else if ((cmd[length_of_cmd - 1] == ':') && (argument == nullptr))
         {
-            labels_Check_Label(labels, cmd, code->offset + 1, length_of_cmd);
+            labels_Check_Label(labels, cmd, code->offset + 1, length_of_cmd, &syntax_error);
             VERIFY(labels->err);
 
             labels_Push(labels, cmd, code->offset + 1);
@@ -614,14 +626,18 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
         else
         {
             code->err = Incorrect_Command;
+            syntax_error = true;
             VERIFY(code->err);
         }
+
+        i++;
     }
 
     code_Shrink_To_Fit(code);
     VERIFY(code->err);
 
-    labels_Set(labels, jumps, code->pointer);
+    labels_Set(labels, jumps, code->pointer, err_line);
+
     VERIFY(jumps->err);
 
     return Done_Successfully;
@@ -629,34 +645,29 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
 
 //----------------------------------------------------------------------------------------------------------------------
 
-int create_code_array(code_struct* code, commands_struct* commands)
+int create_code(code_struct* code, commands_struct* commands, size_t* line)
 {
-    labels_struct labels_structure = {};
-    labels_struct* labels = &labels_structure;
-    labels->label = nullptr;
+    labels_struct labels = {};
+    labels.label = nullptr;
 
-    jumps_struct jumps_structure = {};
-    jumps_struct* jumps = &jumps_structure;
-    jumps->jump = nullptr;
+    jumps_struct jumps = {};
+    jumps.jump = nullptr;
 
     code_Ctor(code, commands);
-    VERIFY(code->err);
+    CHECK_Ctor(code->err);
 
-    jumps_Ctor(jumps);
-    VERIFY(jumps->err);
+    jumps_Ctor(&jumps);
+    CHECK_Ctor(jumps.err);
 
-    labels_Ctor(labels);
-    VERIFY(labels->err);
+    labels_Ctor(&labels);
+    CHECK_Ctor(labels.err);
 
-    int err = record_commands_to_code(commands, code, labels, jumps);
-    if (err)
-    {
-        return err;
-    }
+    int err = record_commands_to_code(commands, code, &labels, &jumps, line);
+    if (err) return err;
 
     free_buffer(commands);
-    labels_Dtor(labels);
-    jumps_Dtor(jumps);
+    labels_Dtor(&labels);
+    jumps_Dtor(&jumps);
 
     printf("---\nSIZE = %d\n(without signature and version)\n", code->offset - SIZE_OF_SIGNATURE - SIZE_OF_VERSION);
     return Done_Successfully;
@@ -675,7 +686,7 @@ int write_code_to_file(code_struct* code, files_struct* files)
         return Failed_To_Write_Code_To_File;
     }
 
-    code_Dtor(code);
+//    code_Dtor(code);
 
     return Done_Successfully;
 }
