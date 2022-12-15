@@ -128,7 +128,7 @@ int open_files(files_struct* files, char** argv)
 
 static void code_Shrink_To_Fit(code_struct* code)
 {
-    char* new_pointer = (char*)realloc (code->pointer, code->offset);
+    char* new_pointer = (char*)recalloc (code->pointer, code->offset);
     if (new_pointer == nullptr)
     {
         code->err = Failed_To_Resize_Array_Of_Code;
@@ -141,7 +141,7 @@ static void code_Shrink_To_Fit(code_struct* code)
 
 static void code_Expand(code_struct* code)
 {
-    char* new_pointer = (char*)realloc (code->pointer, MULTIPLIER * code->size);
+    char* new_pointer = (char*)recalloc (code->pointer, MULTIPLIER * code->size);
     if (new_pointer == nullptr)
     {
         code->err = Failed_To_Resize_Array_Of_Code;
@@ -450,7 +450,7 @@ static void jumps_Expand(jumps_struct* jumps)
 {
     size_t new_size = MULTIPLIER * jumps->number_of_addresses * sizeof(jump_struct);
 
-    jump_struct* new_pointer = (jump_struct*)realloc (jumps->jump, new_size);
+    jump_struct* new_pointer = (jump_struct*)recalloc (jumps->jump, new_size);
     if (new_pointer == nullptr)
     {
         jumps->err = Failed_To_Resize_Array_Of_Jump_Addresses;

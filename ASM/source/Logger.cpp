@@ -48,8 +48,10 @@ void dump_to_console(int err, size_t err_line)
 {
     printf("---\nERROR: ");
     printf(error_message[err]);
+
     if (err_line != 0)
         printf(" (line %zu)", err_line);
+
     printf("\n---");
 }
 
@@ -59,8 +61,10 @@ void dump_to_logfile(FILE* logfile, int err, size_t err_line)
 {
     fprintf(logfile, "ERROR: ");
     fprintf(logfile, error_message[err]);
+
     if (err_line != 0)
         fprintf(logfile, " (line %zu)", err_line);
+
     fprintf(logfile, "\n");
 }
 

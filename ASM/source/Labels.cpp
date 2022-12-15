@@ -118,7 +118,7 @@ static void labels_Expand(labels_struct* labels)
 {
     size_t new_size = MULTIPLIER * labels->number_of_labels * sizeof(label_struct);
 
-    label_struct* new_pointer = (label_struct*)realloc (labels->label, new_size);
+    label_struct* new_pointer = (label_struct*)recalloc (labels->label, new_size);
     if (new_pointer == nullptr)
     {
         labels->err = Failed_To_Resize_Array_Of_Labels;
