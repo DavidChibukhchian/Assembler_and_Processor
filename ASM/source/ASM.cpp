@@ -258,7 +258,7 @@ static int case_REG(char* argument, unsigned char* arg_mask, char* reg, size_t l
             return Done_Successfully;
         }
         else
-            return Nonexistent_Register;
+            return Operating_With_Nonexistent_Register;
     }
 
     return next_case;
@@ -298,7 +298,7 @@ static int case_RAM_REG(char* argument, unsigned char* arg_mask, char* reg, int*
                 return res;
         }
         else
-            return Nonexistent_Register;
+            return Operating_With_Nonexistent_Register;
 
         if (argument[4] == ']')
             return Done_Successfully;

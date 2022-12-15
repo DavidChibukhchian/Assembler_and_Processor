@@ -33,7 +33,7 @@ const char* error_message[] = { "Done Successfully",                          //
                                 "Incorrect jump command",                     // 23 A
                                 "This label already exists",                  // 24 A
                                 "Jump to nonexistent label",                  // 25 A
-                                "Nonexistent register",                       // 26 A
+                                "Operating with nonexistent register",        // 26 A
 
                                 "Failed to create output file",               // 27
                                 "Failed to push bytes to code",               // 28 A
