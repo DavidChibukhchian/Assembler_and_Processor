@@ -62,12 +62,12 @@ void close_files(files_struct* files);
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define VERIFY_err                                                                                                     \
+#define ASSERT(condition, err)                                                                                         \
                                                                                                                        \
-if (err)                                                                                                               \
+if (!(condition))                                                                                                      \
 {                                                                                                                      \
-    dump_to_console(err, err_line);                                                                                    \
-    dump_to_logfile(files.logfile, err, err_line);                                                                     \
+    dump_to_console(err);                                                                                              \
+    dump_to_logfile(files.logfile, err);                                                                               \
     close_files(&files);                                                                                               \
                                                                                                                        \
     return err;                                                                                                        \
@@ -75,12 +75,12 @@ if (err)                                                                        
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define ASSERT(condition, err)                                                                                         \
+#define VERIFY_err                                                                                                     \
                                                                                                                        \
-if (!(condition))                                                                                                      \
+if (err)                                                                                                               \
 {                                                                                                                      \
-    dump_to_console(err);                                                                                              \
-    dump_to_logfile(files.logfile, err);                                                                               \
+    dump_to_console(err, err_line);                                                                                    \
+    dump_to_logfile(files.logfile, err, err_line);                                                                     \
     close_files(&files);                                                                                               \
                                                                                                                        \
     return err;                                                                                                        \
@@ -107,8 +107,7 @@ if (err)                                                                        
                                                                                                                        \
 if (err)                                                                                                               \
 {                                                                                                                      \
-    if (syntax_error)                                                                                                  \
-        *err_line = i + 1;                                                                                             \
+    note_error_line(err, err_line, i);                                                                                 \
                                                                                                                        \
     free_buffer(commands);                                                                                             \
                                                                                                                        \

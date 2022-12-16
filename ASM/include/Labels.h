@@ -1,5 +1,5 @@
-#ifndef _LABELS_H
-#define _LABELS_H
+#ifndef _LABELS_H_
+#define _LABELS_H_
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -31,9 +31,9 @@ void labels_Ctor(labels_struct* labels);
 
 void labels_Push(labels_struct* labels, char* label_name, size_t value);
 
-void labels_Check_Label(labels_struct* labels, char* label_name, size_t value, size_t length_of_label_name, bool* syntax_error);
+void labels_Check_Label(labels_struct* labels, char* label_name, size_t value, size_t length_of_label_name);
 
-void labels_Check_Jump(labels_struct* labels, char* label_name, bool* syntax_error);
+void labels_Check_Jump(labels_struct* labels, char* label_name);
 
 void labels_Set(labels_struct* labels, void* jumps, char* code_pointer, size_t* err_line);
 
@@ -41,4 +41,4 @@ void labels_Dtor(labels_struct* labels);
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#endif // _LABELS_H
+#endif // _LABELS_H_
