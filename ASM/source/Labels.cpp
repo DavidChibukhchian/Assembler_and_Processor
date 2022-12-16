@@ -43,7 +43,7 @@ static int many_labels_in_a_row(labels_struct* labels, size_t value)
 {
     if (labels->number_of_labels != 0)
     {
-        if (labels->label[labels->number_of_labels - 1].value == value)
+        if (labels->label[labels->number_of_labels - 1].value == value + 1)
         {
             labels->err = Too_Many_Labels_In_A_Row;
             return labels->err;
@@ -71,45 +71,30 @@ static int label_already_exists(labels_struct* labels, char* label_name)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void labels_Check_Label(labels_struct* labels, char* label_name, size_t value, size_t length_of_label_name, bool* syntax_error)
+void labels_Check_Label(labels_struct* labels, char* label_name, size_t value, size_t length_of_label_name)
 {
     if (invalid_label_name(labels, label_name, length_of_label_name))
-    {
-        *syntax_error = true;
         return;
-    }
 
     if (many_labels_in_a_row(labels, value))
-    {
-        *syntax_error = true;
         return;
-    }
 
     if (label_already_exists(labels, label_name))
-    {
-        *syntax_error = true;
         return;
-    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void labels_Check_Jump(labels_struct* labels, char* label_name, bool* syntax_error)
+void labels_Check_Jump(labels_struct* labels, char* label_name)
 {
     label_name++;
     size_t length_of_label_name = strlen(label_name);
 
     if (invalid_label_name(labels, label_name, length_of_label_name + 1))
-    {
-        *syntax_error = true;
         return;
-    }
 
     if ((*(label_name - 1) != ':') || (*(label_name) == '\0'))
-    {
         labels->err = Incorrect_Jump_Command;
-        *syntax_error = true;
-    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -143,7 +128,7 @@ void labels_Push(labels_struct* labels, char* label_name, size_t value)
     size_t idx = labels->number_of_labels;
 
     labels->label[idx].name  = label_name;
-    labels->label[idx].value = value;
+    labels->label[idx].value = ++value;
 
     labels->number_of_labels++;
     labels->number_of_free_labels--;
@@ -179,7 +164,7 @@ void labels_Set(labels_struct* labels, void* jumps_ptr, char* code_pointer, size
         }
 
         *err_line = jumps->jump[i].line;
-        jumps->err = Jump_To_Nonexistent_Label;
+        labels->err = Jump_To_Nonexistent_Label;
         return;
     }
 }

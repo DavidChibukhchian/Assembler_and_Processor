@@ -2,6 +2,10 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
+#define here printf("\nfunc: %s | line: %d)\n", __func__, __LINE__);
+
+//----------------------------------------------------------------------------------------------------------------------
+
 static const char  VERSION = 7;
 static const int SIGNATURE = 0x123ABCD;
 
@@ -45,7 +49,7 @@ enum ARG_type
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void parse_command(code_struct* code, char* command, char** cmd, char** argument, size_t* length_of_cmd, bool* syntax_error)
+static void parse_command(code_struct* code, char* command, char** cmd, char** argument, size_t* length_of_cmd)
 {
     *cmd = strtok(command, " ");
     *length_of_cmd = strlen(*cmd);
@@ -53,10 +57,7 @@ static void parse_command(code_struct* code, char* command, char** cmd, char** a
     *argument = strtok(nullptr, " ");
 
     if (strtok(nullptr, " ") != nullptr)
-    {
         code->err = Too_Many_Arguments_To_Such_Command;
-        *syntax_error = true;
-    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -66,6 +67,14 @@ static void reset_variables(char* reg, int* value, unsigned char* arg_mask)
     *reg = 0;
     *value = 0;
     *arg_mask = 0;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static void note_error_line(int err, size_t* err_line, size_t i)
+{
+    if ((17 <= err) && (err <= 26))
+        *err_line = i + 1;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -183,19 +192,17 @@ static void code_Push_Int(code_struct* code, int value)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void check_number_of_arguments(code_struct* code, char* argument, ARG_type arg_type, bool* syntax_error)
+static void check_number_of_arguments(code_struct* code, char* argument, ARG_type arg_type)
 {
     if ((arg_type == NO_ARGS) && (argument != nullptr))
     {
         code->err = Too_Many_Arguments_To_Such_Command;
-        *syntax_error = true;
         return;
     }
 
     if (((arg_type == NUM_REG_RAM) || (arg_type == LABEL)) && (argument == nullptr))
     {
         code->err = Too_Few_Arguments_To_Such_Command;
-        *syntax_error = true;
     }
 }
 
@@ -235,7 +242,9 @@ static int case_NUM(char* argument, unsigned char* arg_mask, int* value)
             return Done_Successfully;
         }
         else
+        {
             return Incorrect_Argument;
+        }
     }
 
     return next_case;
@@ -254,7 +263,9 @@ static int case_REG(char* argument, unsigned char* arg_mask, char* reg, size_t l
             return Done_Successfully;
         }
         else
+        {
             return Operating_With_Nonexistent_Register;
+        }
     }
 
     return next_case;
@@ -294,7 +305,9 @@ static int case_RAM_REG(char* argument, unsigned char* arg_mask, char* reg, int*
                 return res;
         }
         else
+        {
             return Operating_With_Nonexistent_Register;
+        }
 
         if (argument[4] == ']')
             return Done_Successfully;
@@ -371,7 +384,7 @@ static int identify_arg(char* argument, unsigned char* arg_mask, char* reg, int*
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void create_arg_mask(code_struct* code, ARG_type arg_type, char* argument, unsigned char* arg_mask, char* reg, int* value, bool* syntax_error)
+static void create_arg_mask(code_struct* code, ARG_type arg_type, char* argument, unsigned char* arg_mask, char* reg, int* value)
 {
     if (arg_type == NO_ARGS)
         return;
@@ -385,8 +398,6 @@ static void create_arg_mask(code_struct* code, ARG_type arg_type, char* argument
     if (arg_type == NUM_REG_RAM)
     {
         code->err = identify_arg(argument, arg_mask, reg, value);
-        if (code->err)
-            *syntax_error = true;
     }
 }
 
@@ -406,9 +417,7 @@ static void code_Push_Command(code_struct* code, unsigned char cmd_code, int val
     }
 
     if (cmd_code & ARG_REG)
-    {
         code_Push_Char(code, reg);
-    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -459,7 +468,7 @@ static void jumps_Expand(jumps_struct* jumps)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void jumps_Put_Code_Address(jumps_struct* jumps, int offset, char* label_name, size_t line)
+static void jumps_Push_Code_Address(jumps_struct* jumps, int offset, char* label_name, size_t line)
 {
     if (jumps->number_of_free_addresses == 0)
     {
@@ -530,23 +539,23 @@ int record_commands_to_buffer(files_struct* files, commands_struct* commands)
 {
     size_t filesize = get_filesize(files->ASM_in);
     if (filesize == 0)
-        return Input_File_Is_Empty;
-
-    char* buffer = read_file_to_buffer(files->ASM_in, filesize);
-    if (buffer == nullptr)
-        return Failed_To_Create_Buffer;
-
-    commands->buffer = buffer;
-    commands->number_of_commands = count_lines(buffer);
-
-    char** array_of_commands = split_buffer(buffer, commands->number_of_commands, filesize);
-    if (array_of_commands == nullptr)
     {
-        free(buffer);
-        return Failed_To_Create_Array_Of_Commands;
+        return Input_File_Is_Empty;
     }
 
-    commands->array_of_commands = array_of_commands;
+    commands->buffer = read_file_to_buffer(files->ASM_in, filesize);
+    if (commands->buffer == nullptr)
+    {
+        return Failed_To_Create_Buffer;
+    }
+    commands->number_of_commands = count_lines(commands->buffer);
+
+    commands->array_of_commands = split_buffer(commands->buffer, commands->number_of_commands, filesize);
+    if (commands->array_of_commands == nullptr)
+    {
+        free(commands->buffer);
+        return Failed_To_Create_Array_Of_Commands;
+    }
 
     return Done_Successfully;
 }
@@ -565,12 +574,10 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
     char* argument = nullptr;
     size_t length_of_cmd = 0;
 
-    bool syntax_error = false;
-
     size_t i = 0;
-    while (i < commands->number_of_commands)
+    for (; i < commands->number_of_commands; i++)
     {
-        parse_command(code, commands->array_of_commands[i], &cmd, &argument, &length_of_cmd, &syntax_error);
+        parse_command(code, commands->array_of_commands[i], &cmd, &argument, &length_of_cmd);
         VERIFY(code->err);
 
         if (false) {}
@@ -584,18 +591,18 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
             cmd_code = CMD_##name;                                                                                     \
             reset_variables(&reg, &value, &arg_mask);                                                                  \
                                                                                                                        \
-            check_number_of_arguments(code, argument, arg_type, &syntax_error);                                        \
+            check_number_of_arguments(code, argument, arg_type);                                                       \
             VERIFY(code->err);                                                                                         \
                                                                                                                        \
-            create_arg_mask(code, arg_type, argument, &arg_mask, &reg, &value, &syntax_error);                         \
+            create_arg_mask(code, arg_type, argument, &arg_mask, &reg, &value);                                        \
             VERIFY(code->err);                                                                                         \
                                                                                                                        \
             if (arg_type == LABEL)                                                                                     \
             {                                                                                                          \
-                labels_Check_Jump(labels, argument, &syntax_error);                                                    \
+                labels_Check_Jump(labels, argument);                                                                   \
                 VERIFY(labels->err);                                                                                   \
                                                                                                                        \
-                jumps_Put_Code_Address(jumps, code->offset, argument, i);                                              \
+                jumps_Push_Code_Address(jumps, code->offset, argument, i);                                             \
                 VERIFY(jumps->err);                                                                                    \
             }                                                                                                          \
                                                                                                                        \
@@ -612,29 +619,25 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
 
         else if ((cmd[length_of_cmd - 1] == ':') && (argument == nullptr))
         {
-            labels_Check_Label(labels, cmd, code->offset + 1, length_of_cmd, &syntax_error);
+            labels_Check_Label(labels, cmd, code->offset, length_of_cmd);
             VERIFY(labels->err);
 
-            labels_Push(labels, cmd, code->offset + 1);
+            labels_Push(labels, cmd, code->offset);
             VERIFY(labels->err);
         }
 
         else
         {
             code->err = Incorrect_Command;
-            syntax_error = true;
             VERIFY(code->err);
         }
-
-        i++;
     }
 
     code_Shrink_To_Fit(code);
     VERIFY(code->err);
 
     labels_Set(labels, jumps, code->pointer, err_line);
-
-    VERIFY(jumps->err);
+    VERIFY(labels->err);
 
     return Done_Successfully;
 }
@@ -664,7 +667,8 @@ int create_code(code_struct* code, commands_struct* commands, size_t* line)
     free_buffer(commands);
     labels_Dtor(&labels);
     jumps_Dtor(&jumps);
-    
+
+    printf("---\nSIZE = %d\n(without signature and version)\n", code->offset - SIZE_OF_SIGNATURE - SIZE_OF_VERSION);
     return Done_Successfully;
 }
 
@@ -681,7 +685,7 @@ int write_code_to_file(code_struct* code, files_struct* files)
         return Failed_To_Write_Code_To_File;
     }
 
-//    code_Dtor(code);
+    code_Dtor(code);
 
     return Done_Successfully;
 }
