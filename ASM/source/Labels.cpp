@@ -43,7 +43,7 @@ static int many_labels_in_a_row(labels_struct* labels, size_t value)
 {
     if (labels->number_of_labels != 0)
     {
-        if (labels->label[labels->number_of_labels - 1].value == value + 1)
+        if (labels->label[labels->number_of_labels - 1].value == value)
         {
             labels->err = Too_Many_Labels_In_A_Row;
             return labels->err;
@@ -128,7 +128,7 @@ void labels_Push(labels_struct* labels, char* label_name, size_t value)
     size_t idx = labels->number_of_labels;
 
     labels->label[idx].name  = label_name;
-    labels->label[idx].value = ++value;
+    labels->label[idx].value = value;
 
     labels->number_of_labels++;
     labels->number_of_free_labels--;
@@ -150,7 +150,7 @@ void labels_Set(labels_struct* labels, void* jumps_ptr, char* code_pointer, size
                 size_t len = strlen(jumps->jump[i].label_name);
                 if (labels->label[j].name[len] == ':')
                 {
-                    *(code_pointer + jumps->jump[i].code_address) = labels->label[j].value;
+                    *(code_pointer + jumps->jump[i].code_address) = labels->label[j].value - 5;
                     label_was_set = true;
                     break;
                 }

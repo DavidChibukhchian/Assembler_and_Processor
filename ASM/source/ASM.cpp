@@ -28,7 +28,7 @@ static const size_t SIZE_OF_VERSION   = sizeof(char);
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define DEF_CMD(name, arg_type, CPU_instructions) \
+#define DEF_CMD(name, arg_type, execution_code)                                                                        \
 CMD_##name,
 
 enum Commands
@@ -73,10 +73,24 @@ static void reset_variables(char* reg, int* value, unsigned char* arg_mask)
 
 static void note_error_line(int err, size_t* err_line, size_t i)
 {
+    if (*err_line != 0)
+        return;
+
     if ((17 <= err) && (err <= 26))
         *err_line = i + 1;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+
+static bool empty_line(commands_struct* commands, size_t i)
+{
+    if (*commands->array_of_commands[i] == '\0')
+    {
+        return true;
+    }
+
+    return false;
+}
 //----------------------------------------------------------------------------------------------------------------------
 
 void close_files(files_struct* files)
@@ -259,7 +273,7 @@ static int case_REG(char* argument, unsigned char* arg_mask, char* reg, size_t l
         if ((argument[1] - 'a') < NUMBER_OF_REGISTERS)
         {
             *arg_mask = (*arg_mask) | ARG_REG;
-            *reg = argument[1] - 'a' + 1;
+            *reg = argument[1] - 'a';
             return Done_Successfully;
         }
         else
@@ -298,7 +312,7 @@ static int case_RAM_REG(char* argument, unsigned char* arg_mask, char* reg, int*
         if ((argument[2] - 'a') < NUMBER_OF_REGISTERS)
         {
             *arg_mask = (*arg_mask) | ARG_REG;
-            *reg = argument[2] - 'a' + 1;
+            *reg = argument[2] - 'a';
 
             int res = case_RAM_REG_NUM(argument, arg_mask, value);
             if (res != next_case)
@@ -517,7 +531,7 @@ static void code_Ctor(code_struct* code, commands_struct* commands)
 {
     code->err    = 0;
     code->offset = 0;
-    code->size   = SIZE_OF_SIGNATURE + SIZE_OF_VERSION + commands->number_of_commands;
+    code->size   = SIZE_OF_SIGNATURE + SIZE_OF_VERSION + commands->number_of_commands + 2;
 
     code->pointer = (char*)calloc (code->size, sizeof(char));
     if (code->pointer == nullptr)
@@ -577,14 +591,17 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
     size_t i = 0;
     for (; i < commands->number_of_commands; i++)
     {
+        if (empty_line(commands, i))
+            continue;
+
         parse_command(code, commands->array_of_commands[i], &cmd, &argument, &length_of_cmd);
         VERIFY(code->err);
 
         if (false) {}
 
-        //------------------------------------------------------------------
+        //-------------------------------Code-Generation-------------------------------
 
-        #define DEF_CMD(name, arg_type, CPU_instructions)                                                              \
+        #define DEF_CMD(name, arg_type, execution_code)                                                                \
                                                                                                                        \
         else if (!strcmp(cmd, #name))                                                                                  \
         {                                                                                                              \
@@ -615,7 +632,7 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
 
         #undef DEF_CMD
 
-        //------------------------------------------------------------------
+        //-----------------------------------------------------------------------------
 
         else if ((cmd[length_of_cmd - 1] == ':') && (argument == nullptr))
         {

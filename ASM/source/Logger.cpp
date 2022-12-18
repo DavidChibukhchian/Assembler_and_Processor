@@ -7,12 +7,12 @@ const char* error_message[] = { "Done Successfully",                          //
                                 "Incorrect number of command line arguments", // 2 both
                                 "Failed to open input file",                  // 3 both
 
-                                "Invalid type of input file",                 // 4
-                                "Outdated version of code",                   // 5
-                                "Incorrect version of code",                  // 6
-                                "Input file is empty",                        // 7
+                                "Invalid type of input file",                 // 4 C
+                                "Outdated version of code",                   // 5 C
+                                "Incorrect version of code",                  // 6 C
+                                "Input file is empty",                        // 7 both
 
-                                "Failed to create buffer",                    // 8
+                                "Failed to create buffer",                    // 8 A
                                 "Failed to write code to file",               // 9 A
                                 "Too few elements in stack",                  // 10 C
 
@@ -21,8 +21,8 @@ const char* error_message[] = { "Done Successfully",                          //
                                 "Failed to create dump file",                 // 13 C
                                 "Failed to create array of commands",         // 14 A
 
-                                "Failed to create array of code",             // 15
-                                "Failed to resize array of code",             // 16
+                                "Failed to create array of code",             // 15 both
+                                "Failed to resize array of code",             // 16 A
 
                                 "Incorrect command",                          // 17 A
                                 "Incorrect argument",                         // 18 A
@@ -35,7 +35,7 @@ const char* error_message[] = { "Done Successfully",                          //
                                 "Jump to nonexistent label",                  // 25 A
                                 "Operating with nonexistent register",        // 26 A
 
-                                "Failed to create output file",               // 27
+                                "Failed to create output file",               // 27 A
                                 "Failed to push bytes to code",               // 28 A
                                 "Failed to create array of labels",           // 29 A
                                 "Failed to resize array of labels",           // 30 A

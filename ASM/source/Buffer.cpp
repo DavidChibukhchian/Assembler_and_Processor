@@ -34,14 +34,12 @@ size_t count_lines(char* buffer)
 {
     size_t number_of_lines = 0;
 
-    buffer++;
     while (*buffer != '\0')
     {
-        if ((*(buffer - sizeof(char)) == '\n') && (*buffer != '\n'))
+        if (*buffer == '\n')
         {
             number_of_lines++;
         }
-
         buffer++;
     }
 
@@ -68,21 +66,21 @@ void change_delimiter(char* buffer, char old_delimiter, char new_delimiter)
 char** split_buffer(char* buffer, size_t number_of_lines, size_t filesize)
 {
     change_delimiter(buffer, '\n', '\0');
-    
+
     char** array_of_commands = (char**)calloc (number_of_lines, sizeof(char*));
     if (array_of_commands == nullptr)
     {
         return nullptr;
     }
 
-    char** command = array_of_commands;
-
-    for (char* ptr = buffer; ptr <= (buffer + filesize); ptr++)
+    buffer++;
+    size_t j = 0;
+    for (size_t i = 0; i <= filesize; i++)
     {
-        if ( (*(ptr - 1) == '\0') && (*ptr != '\0') )
+        if (*(buffer + i - 1) == '\0')
         {
-            *command = ptr;
-            command++;
+            array_of_commands[j] = buffer + i;
+            j++;
         }
     }
 
