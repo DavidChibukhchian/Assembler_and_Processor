@@ -34,11 +34,12 @@ const char* error_message[] = { "Done Successfully",                          //
                                 "Incorrect version of code",                  // 27 C
                                 "Too few elements in stack",                  // 28 C
                                 "Stack is empty",                             // 29 C
-                                "Address is bigger than size of RAM",         // 30 C
-                                "Infinite loop was detected",                 // 31 C
-                                "Division by zero",                           // 32 C
-                                "Entered invalid value",                      // 33 C
-                                "Failed to create dump file" };               // 34 C
+                                "Call stack is empty",                        // 30 C
+                                "Address is bigger than size of RAM",         // 31 C
+                                "Infinite loop was detected",                 // 32 C
+                                "Division by zero",                           // 33 C
+                                "Entered invalid value",                      // 34 C
+                                "Failed to create dump file" };               // 35 C
 
 //----------------------------------------------------------------------------------------------------------------------
 

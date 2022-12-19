@@ -17,7 +17,7 @@ static const unsigned char ARG_RAM = 1 << 5;
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define DEF_CMD(name, arg_type, code)                                                                                  \
+#define DEF_CMD(name, arg_type, execution_code)                                                                        \
 CMD_##name,
 
 enum Commands
@@ -198,18 +198,18 @@ void fprintf_commands(FILE* dump_file, unsigned char* code, int size)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void fprintf_line(FILE* dump_file, size_t ip)
+void fprintf_line(FILE* dump_file, int ip)
 {
     for (size_t i = 0; i < ip; i++)
     {
         fprintf(dump_file, "~~~");
     }
-    fprintf(dump_file, "^ ip = %zu\n", ip);
+    fprintf(dump_file, "^ ip = %d\n", ip);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void CPU_Dump(Code code, FILE* dump_file, size_t ip)
+void CPU_Dump(Code code, FILE* dump_file, int ip)
 {
     int size = _msize(code);
 
@@ -222,7 +222,7 @@ void CPU_Dump(Code code, FILE* dump_file, size_t ip)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int Dump(Code code, const Stack* stack, size_t ip)
+static int Dump(Code code, const Stack* stack, int ip)
 {
     FILE* dump_file = fopen("CPU_dump.txt", "w");
     if (dump_file == nullptr)
