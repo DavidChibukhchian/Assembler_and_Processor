@@ -269,20 +269,6 @@ int read_code(Code* code, files_struct* files)
 {
     size_t filesize = get_filesize(files->ASM_out);
 
-//    char* byte_code = (char*)calloc (filesize, sizeof(char));
-//    fread(byte_code, sizeof(char), filesize, files->ASM_out);
-//
-//    FILE* dump = fopen("DUMP.bin", "wb+");
-//    fwrite(byte_code, sizeof(char), filesize, dump);
-//
-//
-//
-//    fclose(dump);
-//
-//    free(byte_code);
-//    fseek(files->ASM_out, 0, SEEK_SET);
-
-
     int err = 0;
 
     err = check_file(files->ASM_out, filesize);
