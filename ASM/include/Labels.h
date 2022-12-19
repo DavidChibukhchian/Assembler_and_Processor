@@ -14,7 +14,7 @@
 struct label_struct
 {
     char* name;
-    size_t value;
+    int value;
 };
 
 struct labels_struct
@@ -29,7 +29,7 @@ struct labels_struct
 
 void labels_Ctor(labels_struct* labels);
 
-void labels_Push(labels_struct* labels, char* label_name, size_t value);
+void labels_Push(labels_struct* labels, char* label_name, int value);
 
 void labels_Check_Label(labels_struct* labels, char* label_name, size_t value, size_t length_of_label_name);
 
