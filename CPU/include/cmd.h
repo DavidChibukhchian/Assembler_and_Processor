@@ -214,7 +214,7 @@ DEF_CMD(ret, NO_ARGS,
     if (call_stack.size == 0)
     {
         free(code);
-        return Stack_Is_Empty;
+        return Call_Stack_Is_Empty;
     }
 
     stack_Pop(&call_stack, &new_ip);

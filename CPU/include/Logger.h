@@ -41,11 +41,12 @@ enum Errors
     Incorrect_Version_Of_Code                = 27,
     Too_Few_Elements_In_Stack                = 28,
     Stack_Is_Empty                           = 29,
-    Address_Is_Bigger_Than_Size_Of_RAM       = 30,
-    Infinite_Loop_Was_Detected               = 31,
-    Division_By_Zero                         = 32,
-    Entered_Invalid_Value                    = 33,
-    Failed_To_Create_Dump_File               = 34
+    Call_Stack_Is_Empty                      = 30,
+    Address_Is_Bigger_Than_Size_Of_RAM       = 31,
+    Infinite_Loop_Was_Detected               = 32,
+    Division_By_Zero                         = 33,
+    Entered_Invalid_Value                    = 34,
+    Failed_To_Create_Dump_File               = 35
 };
 
 //----------------------------------------------------------------------------------------------------------------------
