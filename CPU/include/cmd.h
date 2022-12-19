@@ -194,16 +194,13 @@ DEF_CMD(dump, NO_ARGS,
     ip++;
 })
 
-
-
-
 //----------------------------------------------------------------------------------------------------------------------
 
 DEF_CMD(call, LABEL,
 {
     ip++;
     new_ip = *((int*)(code + ip));
-//    printf("IP: %d\n", ip + sizeof(int));
+
     stack_Push(&call_stack, ip + sizeof(int));
     ip = new_ip;
 })
@@ -212,6 +209,12 @@ DEF_CMD(call, LABEL,
 
 DEF_CMD(ret, NO_ARGS,
 {
+    if (call_stack.size == 0)
+    {
+        free(code);
+        return Stack_Is_Empty;
+    }
+
     stack_Pop(&call_stack, &new_ip);
 
     ip = new_ip;
@@ -219,22 +222,10 @@ DEF_CMD(ret, NO_ARGS,
 
 //----------------------------------------------------------------------------------------------------------------------
 
-
-
-
-
 DEF_CMD(jmp, LABEL,
 {
     ip++;
-//    FILE *output = fopen ("dump.bin", "wb+");
-//    fwrite (code, sizeof (char), 46, output);
-//    fclose (output);
-//    exit (0);
-//    printf ("%d\n", _msize (code));
-//    printf ("code: %d%d%d%d%d%d\n", *(code + ip), *(code + ip + 1), *(code + ip + 2), *(code + ip + 3), *(code + ip + 4), *(code + ip + 5));
-//    printf("old ip: %d\n", ip);
     new_ip = *((int*)(code + ip));
-//    printf("%d\n", new_ip);
     ip = new_ip;
 })
 
