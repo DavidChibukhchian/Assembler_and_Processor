@@ -8,9 +8,6 @@ static const char  VERSION = 7;
 
 static const int SIGNATURE = 0x123ABCD;
 
-static const size_t NUMBER_OF_REGISTERS = 5;
-static const size_t SIZE_OF_RAM = 1024;
-
 static const size_t SIZE_OF_SIGNATURE = sizeof(int);
 static const size_t SIZE_OF_VERSION   = sizeof(char);
 
@@ -41,6 +38,7 @@ enum ARG_type
 
 //--------------------------------------------------------------------------------------------------------------------//
 
+static const size_t NUMBER_OF_REGISTERS = 5;
 static const size_t MULTIPLIER = 2;
 static const size_t START_NUMBER_OF_JUMP_ADDRESSES = 3;
 static const int next_case = 1000;
@@ -497,7 +495,7 @@ static void jumps_Push_Code_Address(jumps_struct* jumps, int offset, char* label
 
     jumps->jump[idx].code_address = ++offset;
     jumps->jump[idx].line         = ++line;
-    jumps->jump[idx].label_name   = ++label_name;
+    jumps->jump[idx].label_name   = label_name;
 
     jumps->number_of_addresses++;
     jumps->number_of_free_addresses--;
@@ -686,7 +684,8 @@ int create_code(code_struct* code, commands_struct* commands, size_t* err_line)
     free_buffer(commands);
     labels_Dtor(&labels);
     jumps_Dtor(&jumps);
-    
+
+    printf("---\nSIZE = %d\n(without signature and version)\n", code->offset - SIZE_OF_SIGNATURE - SIZE_OF_VERSION);
     return Done_Successfully;
 }
 

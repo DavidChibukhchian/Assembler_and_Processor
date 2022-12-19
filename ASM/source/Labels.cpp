@@ -2,6 +2,11 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
+static const size_t SIZE_OF_SIGNATURE = sizeof(int);
+static const size_t SIZE_OF_VERSION   = sizeof(char);
+
+//----------------------------------------------------------------------------------------------------------------------
+
 static const size_t MULTIPLIER = 2;
 static const size_t START_NUMBER_OF_LABELS = 3;
 
@@ -87,13 +92,14 @@ void labels_Check_Label(labels_struct* labels, char* label_name, size_t value, s
 
 void labels_Check_Jump(labels_struct* labels, char* label_name)
 {
-    label_name++;
+//    label_name++;
     size_t length_of_label_name = strlen(label_name);
 
-    if (invalid_label_name(labels, label_name, length_of_label_name + 1))
+    if (invalid_label_name(labels, label_name, length_of_label_name))
+//    if (invalid_label_name(labels, label_name, length_of_label_name + 1))
         return;
 
-    if ((*(label_name - 1) != ':') || (*(label_name) == '\0'))
+    if (*(label_name) == '\0')
     {
         labels->err = Incorrect_Jump_Command;
     }
@@ -152,7 +158,7 @@ void labels_Set(labels_struct* labels, void* jumps_ptr, char* code_pointer, size
                 size_t len = strlen(jumps->jump[i].label_name);
                 if (labels->label[j].name[len] == ':')
                 {
-                    *(int*)(code_pointer + jumps->jump[i].code_address) = labels->label[j].value - 5;
+                    *(int*)(code_pointer + jumps->jump[i].code_address) = labels->label[j].value - SIZE_OF_SIGNATURE - SIZE_OF_VERSION;
                     label_was_set = true;
                     break;
                 }
@@ -167,6 +173,7 @@ void labels_Set(labels_struct* labels, void* jumps_ptr, char* code_pointer, size
 
         *err_line = jumps->jump[i].line;
         labels->err = Jump_To_Nonexistent_Label;
+
         return;
     }
 }
