@@ -25,7 +25,7 @@ enum Errors
 
     Stack_Is_Empty                           = 11,
     Address_Is_Bigger_Than_Size_Of_RAM       = 12,
-    Infinite_Loop_Detected                   = 13,
+    Infinite_Loop_Was_Detected               = 13,
     Division_By_Zero                         = 14,
     Entered_Invalid_Value                    = 15,
     Failed_To_Create_Dump_File               = 16,
