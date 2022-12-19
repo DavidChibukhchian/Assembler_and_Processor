@@ -2,12 +2,18 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static const int SIGNATURE = 0x123ABCD;
 static const char  VERSION = 7;
 
-#define SIZEOF_SIGNATURE sizeof(int)
-#define SIZEOF_VERSION   sizeof(char)
+//--------------------------------------------------------------------------------------------------------------------//
 
+static const int SIGNATURE = 0x123ABCD;
+
+static const size_t SIZE_OF_SIGNATURE = sizeof(int);
+static const size_t SIZE_OF_VERSION   = sizeof(char);
+
+static const unsigned char ARG_NUM = 1 << 7;
+static const unsigned char ARG_REG = 1 << 6;
+static const unsigned char ARG_RAM = 1 << 5;
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -16,104 +22,153 @@ CMD_##name,
 
 enum Commands
 {
-#include "cmd.h"
+    #include "cmd.h"
 };
 
 #undef DEF_CMD
 
-
-enum ARG_CG
-{
-    NO_ARGS  = 0,
-    ARG_NUM  = 1,
-    ARG_REGG = 2,
-    ARG_RAM  = 3
-};
-
-//enum Commands
-//{
-//    CMD_HLT  = 0,
-//    CMD_PUSH = 1,
-//    CMD_POP  = 2,
-//    CMD_ADD  = 3,
-//    CMD_SUB  = 4,
-//    CMD_MUL  = 5,
-//    CMD_DIV  = 6,
-//    CMD_OUT  = 7,
-//    CMD_IN   = 8,
-//    CMD_DUMP = 9
-//};
+//----------------------------------------------------------------------------------------------------------------------
 
 enum ARG_type
 {
-    ARG_IMMED = 0,
-    ARG_REG   = 1,
-    ARG_MEM   = 2
+    NO_ARGS,
+    NUM_REG_RAM,
+    LABEL
 };
 
-enum REG
-{
-    REG_RAX = 0,
-    REG_RBX = 1,
-    REG_RCX = 2,
-    REG_RDX = 3
-};
+//--------------------------------------------------------------------------------------------------------------------//
+
+static const size_t MAX_NUMBER_OF_OPERATIONS = 5000;
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int check_signature(FILE* ASM_out)
+int open_files(files_struct* files, char** argv)
 {
-    int signature_value = 0;
-
-    fread(&signature_value, SIZEOF_SIGNATURE, 1, ASM_out);
-
-    if (signature_value != SIGNATURE)
+    FILE* ASM_out = fopen(argv[1], "r");
+    if (ASM_out == nullptr)
     {
-        fclose(ASM_out);
+        return Failed_To_Open_Input_File;
+    }
+    files->ASM_out = ASM_out;
+
+    return Done_Successfully;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void close_files(files_struct* files)
+{
+    if (files->ASM_out != nullptr)
+        fclose(files->ASM_out);
+
+    fclose(files->logfile);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+int open_logfile(files_struct* files)
+{
+    FILE* logfile = fopen("CPU_logfile.txt",  "w");
+    if (logfile == nullptr)
+    {
+        printf("---\nERROR: Failed to create logfile\n---");
+        return Failed_To_Create_Logfile;
+    }
+    files->logfile = logfile;
+
+    files->ASM_out = nullptr;
+
+    return Done_Successfully;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static int check_signature_and_version(FILE* ASM_out)
+{
+    int file_signature = 0;
+    char file_version  = 0;
+
+    fread(&file_signature, SIZE_OF_SIGNATURE, 1, ASM_out);
+    fread(&file_version,   SIZE_OF_VERSION,   1, ASM_out);
+
+    if (file_signature != SIGNATURE)
         return Invalid_Type_Of_Input_File;
-    }
 
-    return Done_Successfully;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-
-static int check_version(FILE* ASM_out)
-{
-    char version_value = 0;
-
-    fread(&version_value, SIZEOF_VERSION, 1, ASM_out);
-
-    if (version_value < VERSION)
-    {
-        fclose(ASM_out);
+    if (file_version < VERSION)
         return Outdated_Version_Of_Code;
-    }
-    if (version_value > VERSION)
-    {
-        fclose (ASM_out);
+
+    if (file_version > VERSION)
         return Incorrect_Version_Of_Code;
-    }
 
     return Done_Successfully;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-
-int check_file(FILE* ASM_out)
+static int check_file(FILE* ASM_out, size_t filesize)
 {
-    int err = 0;
+    if (filesize <= SIZE_OF_SIGNATURE + SIZE_OF_VERSION)
+        return Invalid_Type_Of_Input_File;
 
-    err = check_signature(ASM_out);
+    int err = check_signature_and_version(ASM_out);
     if (err)
         return err;
 
-    err = check_version(ASM_out);
-    if (err)
-        return err;
+    if (filesize == SIZE_OF_SIGNATURE + SIZE_OF_VERSION)
+        return Input_File_Is_Empty;
 
     return Done_Successfully;
+}
+//----------------------------------------------------------------------------------------------------------------------
+
+static int check_RAM_address(int address)
+{
+    if (address > SIZE_OF_RAM)
+        return Address_Is_Bigger_Than_Size_Of_RAM;
+
+    return Done_Successfully;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static int check_stack(const Stack* stack, Commands command)
+{
+    size_t min_number_of_elements = 0;
+
+    if (command == CMD_pop)
+    {
+        min_number_of_elements = 1;
+        if (stack->size < min_number_of_elements)
+            return Stack_Is_Empty;
+    }
+    else
+    {
+        min_number_of_elements = 2;
+        if (stack->size < min_number_of_elements)
+            return Too_Few_Elements_In_Stack;
+    }
+
+    if ((command == CMD_div) && (*stack->top_elem == 0))
+        return Division_By_Zero;
+
+    return Done_Successfully;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static void get_numbers_from_stack(Stack* stack, int* number_1, int* number_2, ARG_type arg_type)
+{
+    if (arg_type == LABEL)
+    {
+        stack_Pop(stack, number_1);
+        stack_Top(stack, number_2);
+        stack_Push(stack, *number_1);
+    }
+    else
+    {
+        stack_Pop(stack, number_1);
+        stack_Pop(stack, number_2);
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -130,11 +185,13 @@ void fprintf_bytes(FILE* dump_file, int size)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void fprintf_commands(FILE* dump_file, char* code, int size)
+void fprintf_commands(FILE* dump_file, unsigned char* code, int size)
 {
+    unsigned char cmd = 0;
     for (size_t i = 0; i < size; i++)
     {
-        (code[i] / 10) ? (fprintf(dump_file, "%d ", code[i])) : (fprintf(dump_file, "0%d ", code[i]));
+        cmd = code[i] & ~(ARG_NUM + ARG_REG + ARG_RAM);
+        (cmd / 10) ? (fprintf(dump_file, "%d ", cmd)) : (fprintf(dump_file, "0%d ", cmd));
     }
     fprintf(dump_file, "\n");
 }
@@ -149,11 +206,12 @@ void fprintf_line(FILE* dump_file, size_t ip)
     }
     fprintf(dump_file, "^ ip = %zu\n", ip);
 }
+
 //----------------------------------------------------------------------------------------------------------------------
 
-void CPU_Dump(char* code, FILE* dump_file, size_t ip)
+void CPU_Dump(Code code, FILE* dump_file, size_t ip)
 {
-    int size = _msize(code) - SIZEOF_SIGNATURE - SIZEOF_VERSION;
+    int size = _msize(code);
 
     fprintf_bytes(dump_file, size);
 
@@ -164,7 +222,7 @@ void CPU_Dump(char* code, FILE* dump_file, size_t ip)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-int Dump(char* code, const Stack* stk, size_t ip)
+static int Dump(Code code, const Stack* stack, size_t ip)
 {
     FILE* dump_file = fopen("CPU_dump.txt", "w");
     if (dump_file == nullptr)
@@ -173,28 +231,9 @@ int Dump(char* code, const Stack* stk, size_t ip)
     }
 
     CPU_Dump(code, dump_file, ip);
-    stackDump(stk, dump_file);
+    stack_Dump(stack, dump_file);
 
     fclose(dump_file);
-    return Done_Successfully;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-
-static int check_stack(const Stack* stk, Commands command)
-{
-    size_t min_number_of_elements = 0;
-
-    if (command == CMD_POP)
-        min_number_of_elements = 1;
-    else
-        min_number_of_elements = 2;
-
-    if (stk->size < min_number_of_elements)
-        return Too_Few_Elements_In_Stack;
-
-    if ((command == CMD_DIV) && (*stk->top_elem == 0))
-        return Division_By_Zero;
 
     return Done_Successfully;
 }
@@ -211,165 +250,112 @@ size_t get_filesize(FILE* filename)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-char* read_code_to_buffer(FILE* ASM_out, int* err)
+static int create_code_array(Code* code, FILE* ASM_out, size_t filesize)
 {
-    size_t filesize = get_filesize(ASM_out);
-    if (filesize == 0)
-    {
-        fclose(ASM_out);
-        *err = Input_File_Is_Empty;
-        return nullptr;
-    }
+    size_t code_size = filesize - SIZE_OF_SIGNATURE - SIZE_OF_VERSION;
 
-    char* code = (char*)calloc (filesize, sizeof(char));
-    if (code == nullptr)
-    {
-        fclose(ASM_out);
-        *err = Failed_To_Create_Buffer;
-        return code;
-    }
+    *code = (Code)calloc (code_size, sizeof(char));
+    if (*code == nullptr)
+        return Failed_To_Create_Array_Of_Code;
 
-    fread(code, sizeof(char), filesize, ASM_out);
+    fread(*code, sizeof(char), code_size, ASM_out);
 
-    fclose(ASM_out);
-    return code;
-}
-
-
-void func(char* stroka)
-{
-    stroka[7] = 'a';
+    return Done_Successfully;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-int run_code(char* code, Stack* stk, int* REG)
+int read_code(Code* code, files_struct* files)
+{
+    size_t filesize = get_filesize(files->ASM_out);
+
+    char* byte_code = (char*)calloc (filesize, sizeof(char));
+    fread(byte_code, sizeof(char), filesize, files->ASM_out);
+
+    FILE* dump = fopen("DUMP.bin", "wb+");
+    fwrite(byte_code, sizeof(char), filesize, dump);
+
+
+
+    fclose(dump);
+
+    free(byte_code);
+    fseek(files->ASM_out, 0, SEEK_SET);
+
+
+    int err = 0;
+
+    err = check_file(files->ASM_out, filesize);
+    if (err)
+        return err;
+
+    err = create_code_array(code, files->ASM_out, filesize);
+    if (err)
+        return err;
+
+    return Done_Successfully;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+static void identify_args(char cmd_byte, unsigned char* arg_mask, unsigned char* cmd)
+{
+    *arg_mask = cmd_byte  &  (ARG_NUM + ARG_REG + ARG_RAM);
+    *cmd      = cmd_byte  & ~(ARG_NUM + ARG_REG + ARG_RAM);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+int run_code(Code code, Stack* stack, int* REG, int* RAM)
 {
     int err = 0;
-    size_t ip = 0;
 
-    int num1 = 0;
-    int num2 = 0;
+    unsigned char arg_mask = 0;
+    unsigned char cmd = 0;
 
-    while (code[ip] != CMD_HLT)
+    int new_ip   = 0;
+    int number_1 = 0;
+    int number_2 = 0;
+    char number_of_register = 0;
+
+    size_t number_of_operations = 0;
+
+    Stack call_stack = {};
+    stack_Ctor(&call_stack);
+
+    int ip = 0;
+
+    while (code[ip] != CMD_hlt)
     {
-        switch(code[ip])
+        identify_args(code[ip], &arg_mask, &cmd);
+
+        switch (cmd)
         {
 
+            //-------------------------------Code-Generation-------------------------------
 
-#define DEF_CMD(name, arg_type, code)  \
-case CMD_##name:                       \
-    code;                              \
-                                       \
-    break;
-#include "cmd.h"
-
-
-            case CMD_PUSH:
-                ip++;
-                switch(code[ip])
-                {
-                    case ARG_IMMED:
-                        ip++;
-                        stackPush(stk, *(int*)(code + ip));
-                        ip += sizeof(int);
-                        break;
-
-                    case ARG_REG:
-                        ip++;
-                        stackPush(stk, *(REG + code[ip]));
-                        ip++;
-                        break;
-
-                    case ARG_MEM:
-                        ip++;
-                        break;
-                }
-
+            #define DEF_CMD(name, arg_type, execution_code)                                                            \
+                                                                                                                       \
+            case CMD_##name:                                                                                           \
+                execution_code;                                                                                        \
                 break;
 
-            case CMD_POP:
-                CHECK_STACK(CMD_POP);
-                ip += 2;
-                stackPop(stk, REG + code[ip]);
-                ip++;
+            #include "cmd.h"
 
-                break;
+            #undef DEF_CMD
 
-            case CMD_ADD:
-                CHECK_STACK(CMD_ADD);
-                stackPop(stk, &num1);
-                stackPop(stk, &num2);
-                stackPush(stk, num1 + num2);
-                ip++;
+            //-----------------------------------------------------------------------------
+        }
 
-                break;
-
-            case CMD_SUB:
-                CHECK_STACK(CMD_SUB);
-                stackPop(stk, &num1);
-                stackPop(stk, &num2);
-                stackPush(stk, num2 - num1);
-                ip++;
-
-                break;
-
-            case CMD_MUL:
-                CHECK_STACK(CMD_MUL);
-                stackPop(stk, &num1);
-                stackPop(stk, &num2);
-                stackPush(stk, num1 * num2);
-                ip++;
-
-                break;
-
-            case CMD_DIV:
-                CHECK_STACK(CMD_DIV);
-                stackPop(stk, &num1);
-                stackPop(stk, &num2);
-                stackPush(stk, num2 / num1);
-                ip++;
-
-                break;
-
-            case CMD_OUT:
-                printf("\nStack top element: [%d]\n\n", *stk->top_elem);
-                ip++;
-
-                break;
-
-            case CMD_IN:
-                err = scanf("%d", &num1);
-                if (!err)
-                {
-                    free(code);
-                    return Entered_Invalid_Value;
-                }
-                stackPush(stk, num1);
-                ip++;
-
-                break;
-
-            case CMD_HLT:
-                break;
-
-            case CMD_DUMP:
-                err = Dump(code, stk, ip);
-                if (err)
-                {
-                    free(code);
-                    return err;
-                }
-                ip++;
-
-                break;
-
-            default:
-                return Invalid_Syntax;
-                break;
+        number_of_operations++;
+        if (number_of_operations > MAX_NUMBER_OF_OPERATIONS)
+        {
+            free(code);
+            return Infinite_Loop_Detected;
         }
     }
 
+    stack_Dtor(&call_stack);
     free(code);
     return Done_Successfully;
 }

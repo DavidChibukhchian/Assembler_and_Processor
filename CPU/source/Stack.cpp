@@ -355,7 +355,7 @@ static void set_struct_canaries(Stack* stk)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-int stackCtor(Stack* stk, size_t init_capacity)
+int stack_Ctor(Stack* stk, size_t init_capacity)
 {
     if (stack_pointer_is_null(stk))
         return Stack_Pointer_Is_Null;
@@ -415,7 +415,7 @@ static int stack_resize(Stack* stk, Resize_Mode mode)
         new_buff_size = SIZE_OF_EXPANDED_BUFF;
         stk->capacity *= MULTIPLIER;
     }
-    else // if (mode == SHRINK)
+    else
     {
         new_buff_size = SIZE_OF_SHRANK_BUFF;
         stk->capacity /= MULTIPLIER;
@@ -442,7 +442,7 @@ static int stack_resize(Stack* stk, Resize_Mode mode)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-int stackPush(Stack* stk, elem_t value)
+int stack_Push(Stack* stk, elem_t value)
 {
     int errors = stack_verificator(stk);
     if (errors != Stack_Is_OK)
@@ -473,7 +473,7 @@ int stackPush(Stack* stk, elem_t value)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-int stackPop(Stack* stk, elem_t* top)
+int stack_Pop(Stack* stk, elem_t* top)
 {
     int errors = stack_verificator(stk);
     if (errors != Stack_Is_OK)
@@ -516,7 +516,7 @@ int stackPop(Stack* stk, elem_t* top)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-int stackTop(Stack* stk, elem_t* top)
+int stack_Top(Stack* stk, elem_t* top)
 {
     int errors = stack_verificator(stk);
     if (errors != Stack_Is_OK)
@@ -532,7 +532,7 @@ int stackTop(Stack* stk, elem_t* top)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-int stackDtor(Stack* stk)
+int stack_Dtor(Stack* stk)
 {
     int errors = stack_verificator(stk);
     if (errors != Stack_Is_OK)
@@ -551,7 +551,7 @@ int stackDtor(Stack* stk)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-int stackDisplay(Stack* stk)
+int stack_Display(Stack* stk)
 {
     int errors = stack_verificator(stk);
     if (errors != Stack_Is_OK)
@@ -578,7 +578,7 @@ int stackDisplay(Stack* stk)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void stackDump(const Stack* stk, FILE* dump_file)
+void stack_Dump(const Stack* stk, FILE* dump_file)
 {
     fprintf(dump_file, "\nStack:");
     for (size_t i = 0; i < stk->capacity; i++)

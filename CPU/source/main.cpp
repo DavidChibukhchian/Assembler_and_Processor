@@ -1,42 +1,33 @@
 #include "CPU.h"
 
-static const size_t NUMBER_OF_REGISTERS = 5;
-//static const size_t SIZE_OF_RAM = 1024;
+int RAM[SIZE_OF_RAM] = {0};
+int REG[NUMBER_OF_REGISTERS] = {0};
 
 int main(int argc, char* argv[])
 {
-    int err = 0;
-
-    int REG[NUMBER_OF_REGISTERS] = {0};
-//    int RAM[SIZE_OF_RAM] = {0};
-
-//    char str[] = "1234   ";
-//    sscanf(str, "%s%n", );
-
-    FILE* logfile = fopen("CPU_logfile.txt",  "w");
-    CHECK_LOGFILE(logfile);
+    files_struct files = {};
+    int err = open_logfile(&files);
+    if (err) return err;
 
     ASSERT(argc == 2, Incorrect_Number_Of_CMD_Arguments);
 
-    FILE* ASM_out = fopen(argv[1], "rb");
-    ASSERT(ASM_out != nullptr, Failed_To_Open_Input_File);
+    err = open_files(&files, argv);
+    VERIFY_err;
 
-    err = check_file(ASM_out);
-    VERIFY(err);
+    Code code = nullptr;
+    err = read_code(&code, &files);
+    VERIFY_err;
 
-    char* code = read_code_to_buffer(ASM_out, &err);
-    VERIFY(err);
+    Stack stack = {};
+    stack_Ctor(&stack);
 
-    Stack stk = {};
-    stackCtor(&stk);
+    err = run_code(code, &stack, REG, RAM);
+    VERIFY_err;
 
-    err = run_code(code, &stk, REG);
-    VERIFY(err);
+    close_files(&files);
 
-    printf("RAX: %d\n", REG[1]); printf("RBX: %d\n", REG[2]); printf("RCX: %d\n", REG[3]); printf("RDX: %d\n", REG[4]);
-
-    stackDisplay(&stk);
-    stackDtor(&stk);
+    stack_Display(&stack); //
+    stack_Dtor(&stack);
 
     return 0;
 }
