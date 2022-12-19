@@ -1,17 +1,25 @@
-#ifndef CPU_STACK_H
-#define CPU_STACK_H
+#ifndef _STACK_H
+#define _STACK_H
+
+//----------------------------------------------------------------------------------------------------------------------
 
 #include <stdio.h>
 #include <malloc.h>
 
+//----------------------------------------------------------------------------------------------------------------------
+
 typedef int elem_t;
 typedef long long int canary_t;
+
+//----------------------------------------------------------------------------------------------------------------------
 
 enum stack_status
 {
     ACTIVE,
     INACTIVE
 };
+
+//----------------------------------------------------------------------------------------------------------------------
 
 struct Stack
 {
@@ -34,19 +42,22 @@ struct Stack
     canary_t right_struct_canary;
 };
 
-int stackCtor(Stack* stk, size_t init_capacity = 1);
+//----------------------------------------------------------------------------------------------------------------------
 
-int stackPush(Stack* stk, elem_t value);
+int stack_Ctor(Stack* stk, size_t init_capacity = 1);
 
-int stackPop(Stack* stk, elem_t* top = nullptr);
+int stack_Push(Stack* stk, elem_t value);
 
-int stackTop(Stack* stk, elem_t* top);
+int stack_Pop(Stack* stk, elem_t* top = nullptr);
 
-int stackDtor(Stack* stk);
+int stack_Top(Stack* stk, elem_t* top);
 
-int stackDisplay(Stack* stk);
+int stack_Display(Stack* stk);
 
-void stackDump(const Stack* stk, FILE* dump_file);
+void stack_Dump(const Stack* stk, FILE* dump_file);
 
+int stack_Dtor(Stack* stk);
 
-#endif //CPU_STACK_H
+//----------------------------------------------------------------------------------------------------------------------
+
+#endif // _STACK_H
