@@ -16,31 +16,34 @@ const char* error_message[] = { "Done Successfully",                          //
                                 "Failed to write code to file",               // 9 A
                                 "Too few elements in stack",                  // 10 C
 
-                                "Division by zero",                           // 11 C
-                                "Entered invalid value",                      // 12 C
-                                "Failed to create dump file",                 // 13 C
-                                "Failed to create array of commands",         // 14 A
+                                "Stack is empty",                             // 11 C
+                                "Address is bigger than size of RAM",         // 12 C
+                                "Infinite loop detected",                     // 13 C
+                                "Division by zero",                           // 14 C
+                                "Entered invalid value",                      // 15 C
+                                "Failed to create dump file",                 // 16 C
+                                "Failed to create array of commands",         // 17 A
 
-                                "Failed to create array of code",             // 15 both
-                                "Failed to resize array of code",             // 16 A
+                                "Failed to create array of code",             // 18 both
+                                "Failed to resize array of code",             // 19 A
 
-                                "Incorrect command",                          // 17 A
-                                "Incorrect argument",                         // 18 A
-                                "Too few arguments to such command",          // 19 A
-                                "Too many arguments to such command",         // 20 A
-                                "Invalid label name",                         // 21 A
-                                "Too many labels in a row",                   // 22 A
-                                "Incorrect jump command",                     // 23 A
-                                "This label already exists",                  // 24 A
-                                "Jump to nonexistent label",                  // 25 A
-                                "Operating with nonexistent register",        // 26 A
+                                "Incorrect command",                          // 20 A
+                                "Incorrect argument",                         // 21 A
+                                "Too few arguments to such command",          // 22 A
+                                "Too many arguments to such command",         // 23 A
+                                "Invalid label name",                         // 24 A
+                                "Too many labels in a row",                   // 25 A
+                                "Incorrect jump command",                     // 26 A
+                                "This label already exists",                  // 27 A
+                                "Jump to nonexistent label",                  // 28 A
+                                "Operating with nonexistent register",        // 29 A
 
-                                "Failed to create output file",               // 27 A
-                                "Failed to push bytes to code",               // 28 A
-                                "Failed to create array of labels",           // 29 A
-                                "Failed to resize array of labels",           // 30 A
-                                "Failed to create array of jump addresses",   // 31 A
-                                "Failed to resize array of jump addresses" }; // 32 A
+                                "Failed to create output file",               // 30 A
+                                "Failed to push bytes to code",               // 31 A
+                                "Failed to create array of labels",           // 32 A
+                                "Failed to resize array of labels",           // 33 A
+                                "Failed to create array of jump addresses",   // 34 A
+                                "Failed to resize array of jump addresses" }; // 35 A
 
 //----------------------------------------------------------------------------------------------------------------------
 

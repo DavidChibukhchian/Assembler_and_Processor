@@ -2,29 +2,21 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define here printf("\nfunc: %s | line: %d)\n", __func__, __LINE__);
-
-//----------------------------------------------------------------------------------------------------------------------
-
 static const char  VERSION = 7;
+
+//--------------------------------------------------------------------------------------------------------------------//
+
 static const int SIGNATURE = 0x123ABCD;
 
-static const size_t NUMBER_OF_REGISTERS = 4;
+static const size_t NUMBER_OF_REGISTERS = 5;
+static const size_t SIZE_OF_RAM = 1024;
 
-//----------------------------------------------------------------------------------------------------------------------
+static const size_t SIZE_OF_SIGNATURE = sizeof(int);
+static const size_t SIZE_OF_VERSION   = sizeof(char);
 
 static const unsigned char ARG_NUM = 1 << 7;
 static const unsigned char ARG_REG = 1 << 6;
 static const unsigned char ARG_RAM = 1 << 5;
-
-//----------------------------------------------------------------------------------------------------------------------
-
-static const size_t MULTIPLIER = 2;
-static const size_t START_NUMBER_OF_JUMP_ADDRESSES = 3;
-static const int next_case = 1000;
-
-static const size_t SIZE_OF_SIGNATURE = sizeof(int);
-static const size_t SIZE_OF_VERSION   = sizeof(char);
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -46,6 +38,12 @@ enum ARG_type
     NUM_REG_RAM,
     LABEL
 };
+
+//--------------------------------------------------------------------------------------------------------------------//
+
+static const size_t MULTIPLIER = 2;
+static const size_t START_NUMBER_OF_JUMP_ADDRESSES = 3;
+static const int next_case = 1000;
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -76,7 +74,7 @@ static void note_error_line(int err, size_t* err_line, size_t i)
     if (*err_line != 0)
         return;
 
-    if ((17 <= err) && (err <= 26))
+    if ((20 <= err) && (err <= 29))
         *err_line = i + 1;
 }
 
@@ -273,7 +271,7 @@ static int case_REG(char* argument, unsigned char* arg_mask, char* reg, size_t l
         if ((argument[1] - 'a') < NUMBER_OF_REGISTERS)
         {
             *arg_mask = (*arg_mask) | ARG_REG;
-            *reg = argument[1] - 'a';
+            *reg = argument[1] - 'a' + 1;
             return Done_Successfully;
         }
         else
@@ -312,7 +310,7 @@ static int case_RAM_REG(char* argument, unsigned char* arg_mask, char* reg, int*
         if ((argument[2] - 'a') < NUMBER_OF_REGISTERS)
         {
             *arg_mask = (*arg_mask) | ARG_REG;
-            *reg = argument[2] - 'a';
+            *reg = argument[2] - 'a' + 1;
 
             int res = case_RAM_REG_NUM(argument, arg_mask, value);
             if (res != next_case)
@@ -372,7 +370,7 @@ static int case_RAM(char* argument, unsigned char* arg_mask, char* reg, int* val
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static int identify_arg(char* argument, unsigned char* arg_mask, char* reg, int* value)
+static int identify_arg(Commands command, char* argument, unsigned char* arg_mask, char* reg, int* value)
 {
     size_t length = strlen(argument);
 
@@ -383,7 +381,11 @@ static int identify_arg(char* argument, unsigned char* arg_mask, char* reg, int*
 
     res = case_NUM(argument, arg_mask, value);
     if (res != next_case)
+    {
+        if (command == CMD_pop)
+            return Incorrect_Argument;
         return res;
+    }
 
     res = case_REG(argument, arg_mask, reg, length);
     if (res != next_case)
@@ -398,7 +400,7 @@ static int identify_arg(char* argument, unsigned char* arg_mask, char* reg, int*
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void create_arg_mask(code_struct* code, ARG_type arg_type, char* argument, unsigned char* arg_mask, char* reg, int* value)
+static void create_arg_mask(code_struct* code, Commands command, ARG_type arg_type, char* argument, unsigned char* arg_mask, char* reg, int* value)
 {
     if (arg_type == NO_ARGS)
         return;
@@ -411,7 +413,7 @@ static void create_arg_mask(code_struct* code, ARG_type arg_type, char* argument
 
     if (arg_type == NUM_REG_RAM)
     {
-        code->err = identify_arg(argument, arg_mask, reg, value);
+        code->err = identify_arg(command, argument, arg_mask, reg, value);
     }
 }
 
@@ -611,7 +613,7 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
             check_number_of_arguments(code, argument, arg_type);                                                       \
             VERIFY(code->err);                                                                                         \
                                                                                                                        \
-            create_arg_mask(code, arg_type, argument, &arg_mask, &reg, &value);                                        \
+            create_arg_mask(code, CMD_##name, arg_type, argument, &arg_mask, &reg, &value);                            \
             VERIFY(code->err);                                                                                         \
                                                                                                                        \
             if (arg_type == LABEL)                                                                                     \
@@ -656,12 +658,18 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
     labels_Set(labels, jumps, code->pointer, err_line);
     VERIFY(labels->err);
 
+
+    for (int i = 0; i < labels->number_of_labels; i++)
+    {
+        printf("%s %d\n", labels->label[i].name, labels->label[i].value - 5); //todo
+    }
+
     return Done_Successfully;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-int create_code(code_struct* code, commands_struct* commands, size_t* line)
+int create_code(code_struct* code, commands_struct* commands, size_t* err_line)
 {
     labels_struct labels = {};
     labels.label = nullptr;
@@ -678,7 +686,7 @@ int create_code(code_struct* code, commands_struct* commands, size_t* line)
     labels_Ctor(&labels);
     CHECK_Ctor(labels.err);
 
-    int err = record_commands_to_code(commands, code, &labels, &jumps, line);
+    int err = record_commands_to_code(commands, code, &labels, &jumps, err_line);
     if (err) return err;
 
     free_buffer(commands);

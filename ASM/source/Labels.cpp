@@ -94,7 +94,9 @@ void labels_Check_Jump(labels_struct* labels, char* label_name)
         return;
 
     if ((*(label_name - 1) != ':') || (*(label_name) == '\0'))
+    {
         labels->err = Incorrect_Jump_Command;
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -116,7 +118,7 @@ static void labels_Expand(labels_struct* labels)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void labels_Push(labels_struct* labels, char* label_name, size_t value)
+void labels_Push(labels_struct* labels, char* label_name, int value)
 {
     if (labels->number_of_free_labels == 0)
     {
@@ -150,7 +152,7 @@ void labels_Set(labels_struct* labels, void* jumps_ptr, char* code_pointer, size
                 size_t len = strlen(jumps->jump[i].label_name);
                 if (labels->label[j].name[len] == ':')
                 {
-                    *(code_pointer + jumps->jump[i].code_address) = labels->label[j].value - 5;
+                    *(int*)(code_pointer + jumps->jump[i].code_address) = labels->label[j].value - 5;
                     label_was_set = true;
                     break;
                 }
