@@ -74,7 +74,7 @@ static void note_error_line(int err, size_t* err_line, size_t i)
     if (*err_line != 0)
         return;
 
-    if ((20 <= err) && (err <= 29))
+    if ((15 <= err) && (err <= 24))
         *err_line = i + 1;
 }
 
@@ -657,12 +657,6 @@ static int record_commands_to_code(commands_struct* commands, code_struct* code,
 
     labels_Set(labels, jumps, code->pointer, err_line);
     VERIFY(labels->err);
-
-
-    for (int i = 0; i < labels->number_of_labels; i++)
-    {
-        printf("%s %d\n", labels->label[i].name, labels->label[i].value - 5); //todo
-    }
 
     return Done_Successfully;
 }
