@@ -343,6 +343,7 @@ int run_code(Code code, Stack* stack, int* REG, int* RAM)
 
     stack_Dtor(&call_stack);
     free(code);
+    
     return Done_Successfully;
 }
 
