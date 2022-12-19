@@ -7,10 +7,11 @@ DEF_CMD(hlt, NO_ARGS, {})
 DEF_CMD(push, NUM_REG_RAM,
 {
     ip++;
+
     switch (arg_mask)
     {
         case ARG_NUM:
-            number_1 = *((int*) (code + ip));
+            number_1 = *((int*)(code + ip));
             stack_Push(stack, number_1);
 
             ip += sizeof(int);
@@ -25,7 +26,7 @@ DEF_CMD(push, NUM_REG_RAM,
             break;
 
         case (ARG_NUM + ARG_RAM):
-            number_1 = *((int*) (code + ip));
+            number_1 = *((int*)(code + ip));
 
             CHECK_RAM_ADDRESS(number_1);
 
@@ -46,7 +47,7 @@ DEF_CMD(push, NUM_REG_RAM,
             break;
 
         case (ARG_NUM + ARG_REG + ARG_RAM):
-            number_1 = *((int*) (code + ip));
+            number_1 = *((int*)(code + ip));
             ip += sizeof(int);
 
             number_of_register = code[ip];
@@ -79,7 +80,7 @@ DEF_CMD(pop, NUM_REG_RAM,
             break;
 
         case (ARG_NUM + ARG_RAM):
-            number_1 = *((int*) (code + ip));
+            number_1 = *((int*)(code + ip));
 
             CHECK_RAM_ADDRESS(number_1);
 
@@ -100,7 +101,7 @@ DEF_CMD(pop, NUM_REG_RAM,
             break;
 
         case (ARG_NUM + ARG_REG + ARG_RAM):
-            number_1 = *((int*) (code + ip));
+            number_1 = *((int*)(code + ip));
             ip += sizeof(int);
 
             number_of_register = code[ip];
@@ -194,9 +195,6 @@ DEF_CMD(dump, NO_ARGS,
     ip++;
 })
 
-
-
-
 //----------------------------------------------------------------------------------------------------------------------
 
 DEF_CMD(call, LABEL,
@@ -205,6 +203,7 @@ DEF_CMD(call, LABEL,
     new_ip = *((int*)(code + ip));
 
     stack_Push(&call_stack, ip + sizeof(int));
+
     ip = new_ip;
 })
 
@@ -212,15 +211,18 @@ DEF_CMD(call, LABEL,
 
 DEF_CMD(ret, NO_ARGS,
 {
+    if (call_stack.size == 0)
+    {
+        free(code);
+        return Stack_Is_Empty;
+    }
+
     stack_Pop(&call_stack, &new_ip);
 
     ip = new_ip;
 })
+
 //----------------------------------------------------------------------------------------------------------------------
-
-
-
-
 
 DEF_CMD(jmp, LABEL,
 {
