@@ -25,8 +25,7 @@ int main(int argc, char* argv[])
     VERIFY_err;
 
     close_files(&files);
-
-    stack_Display(&stack); //
+    
     stack_Dtor(&stack);
 
     return 0;
