@@ -7,6 +7,7 @@ DEF_CMD(hlt, NO_ARGS, {})
 DEF_CMD(push, NUM_REG_RAM,
 {
     ip++;
+
     switch (arg_mask)
     {
         case ARG_NUM:
@@ -202,6 +203,7 @@ DEF_CMD(call, LABEL,
     new_ip = *((int*)(code + ip));
 
     stack_Push(&call_stack, ip + sizeof(int));
+
     ip = new_ip;
 })
 
