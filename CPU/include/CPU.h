@@ -24,12 +24,6 @@ struct files_struct
     FILE* ASM_out;
 };
 
-//struct code_struct
-//{
-//    char* code;
-//    size_t size;
-//};
-
 //----------------------------------------------------------------------------------------------------------------------
 
 int open_logfile(files_struct* files);
