@@ -18,7 +18,7 @@ const char* error_message[] = { "Done Successfully",                          //
 
                                 "Stack is empty",                             // 11 C
                                 "Address is bigger than size of RAM",         // 12 C
-                                "Infinite loop detected",                     // 13 C
+                                "Infinite loop was detected",                 s// 13 C
                                 "Division by zero",                           // 14 C
                                 "Entered invalid value",                      // 15 C
                                 "Failed to create dump file",                 // 16 C
