@@ -17,7 +17,7 @@ static const unsigned char ARG_RAM = 1 << 5;
 
 //----------------------------------------------------------------------------------------------------------------------
 
-#define DEF_CMD(name, arg_type, code) \
+#define DEF_CMD(name, arg_type, code)                                                                                  \
 CMD_##name,
 
 enum Commands
@@ -38,7 +38,7 @@ enum ARG_type
 
 //--------------------------------------------------------------------------------------------------------------------//
 
-static const size_t MAX_NUMBER_OF_OPERATIONS = 5000;
+static const size_t MAX_NUMBER_OF_OPERATIONS = 50000;
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -284,7 +284,7 @@ int read_code(Code* code, files_struct* files)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-static void identify_args(char cmd_byte, unsigned char* arg_mask, unsigned char* cmd)
+static void identify_arg(char cmd_byte, unsigned char* arg_mask, unsigned char* cmd)
 {
     *arg_mask = cmd_byte  &  (ARG_NUM + ARG_REG + ARG_RAM);
     *cmd      = cmd_byte  & ~(ARG_NUM + ARG_REG + ARG_RAM);
@@ -313,7 +313,7 @@ int run_code(Code code, Stack* stack, int* REG, int* RAM)
 
     while (code[ip] != CMD_hlt)
     {
-        identify_args(code[ip], &arg_mask, &cmd);
+        identify_arg(code[ip], &arg_mask, &cmd);
 
         switch (cmd)
         {
@@ -343,7 +343,7 @@ int run_code(Code code, Stack* stack, int* REG, int* RAM)
 
     stack_Dtor(&call_stack);
     free(code);
-    
+
     return Done_Successfully;
 }
 
