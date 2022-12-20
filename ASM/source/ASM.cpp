@@ -684,8 +684,7 @@ int create_code(code_struct* code, commands_struct* commands, size_t* err_line)
     free_buffer(commands);
     labels_Dtor(&labels);
     jumps_Dtor(&jumps);
-
-    printf("---\nSIZE = %d\n(without signature and version)\n", code->offset - SIZE_OF_SIGNATURE - SIZE_OF_VERSION);
+    
     return Done_Successfully;
 }
 
@@ -693,8 +692,7 @@ int create_code(code_struct* code, commands_struct* commands, size_t* err_line)
 
 int write_code_to_file(code_struct* code, files_struct* files)
 {
-    size_t written_bytes = 0;
-    written_bytes = fwrite(code->pointer, sizeof(char), code->offset, files->ASM_out);
+    size_t written_bytes = fwrite(code->pointer, sizeof(char), code->offset, files->ASM_out);
 
     if (written_bytes != code->offset)
     {
