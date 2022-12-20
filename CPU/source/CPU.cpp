@@ -299,7 +299,6 @@ int run_code(Code code, Stack* stack, int* REG, int* RAM)
     unsigned char arg_mask = 0;
     unsigned char cmd = 0;
 
-    int new_ip   = 0;
     int number_1 = 0;
     int number_2 = 0;
     char number_of_register = 0;
@@ -310,6 +309,7 @@ int run_code(Code code, Stack* stack, int* REG, int* RAM)
     stack_Ctor(&call_stack);
 
     int ip = 0;
+    int new_ip = 0;
 
     while (code[ip] != CMD_hlt)
     {
