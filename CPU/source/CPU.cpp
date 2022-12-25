@@ -317,7 +317,6 @@ int run_code(Code code, Stack* stack, int* REG, int* RAM)
 
         switch (cmd)
         {
-
             //-------------------------------Code-Generation-------------------------------
 
             #define DEF_CMD(name, arg_type, execution_code)                                                            \
