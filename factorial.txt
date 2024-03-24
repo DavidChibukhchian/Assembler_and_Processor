@@ -1,0 +1,26 @@
+push 1
+push 1
+pop rax
+in
+call factorial
+pop rbx
+pop rbx
+push rax
+hlt
+
+
+factorial:
+    je end
+
+    pop rbx
+    push rbx
+    push rax
+    mul
+    pop rax
+    push rbx
+    push 1
+    sub
+    call factorial
+
+    end:
+ret
